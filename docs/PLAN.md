@@ -242,13 +242,14 @@ cgroup v2 → nftables `socket cgroupv2` → `meta mark` → `ip rule fwmark` �
    остановка чужого VPN, connect → disconnect → connect, интернет после каждого шага; polkit от
    обычного пользователя: `control` без пароля, `configure` — окно пароля.
    Замечено: CLI отвечает «connected» на ~1 с раньше, чем готов его DNS-прокси.
-3. Движок маршрутизации: nftables, cgroup, agv-run.
+3. Движок маршрутизации: nftables, cgroup, agv-run. ✓ Готов и проверен на системе (2026-10-25).
    ✓ Пересмотрено (см. «Движок исключений, итог»): SCRIPT-режим не нужен. ✓ `AppStore`
    (`app-exclusions.json`), `RoutingEngine`, `AppExclusionService`, `RunSocketServer`, `agv-run` (C),
    D-Bus `List/Add/Update/RemoveAppExclusion`, `GetAppTraffic`, `agvd --cleanup`.
    ✓ Тесты: генерация правил, загрузка правил в настоящий nftables в `unshare -rn` (без root),
    движок на поддельных cgroupfs и /proc/sys, сквозной тест настоящего `agv-run` (pid после exec
-   совпадает с перенесённым). Осталось: проверка на системе (`scripts/root-exclusion-test.sh`).
+   совпадает с перенесённым). ✓ На системе: обычный процесс — IP VPN, через agv-run — IP провайдера,
+   счётчики растут (`scripts/root-exclusion-test.sh`).
 4. GUI MVP: главная, локации, сайты-исключения, трей, адаптивная сетка.
 5. Исключения приложений: выбор из .desktop, exec watcher, переписывание .desktop. Проверить
    порталы/screen sharing у перенесённых процессов.
