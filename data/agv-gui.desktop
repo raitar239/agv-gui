@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=AdGuard VPN
+GenericName=VPN client
+Comment=Connect to AdGuard VPN and exclude apps from it
+Exec=agv-gui
+Icon=network-vpn
+Terminal=false
+Categories=Network;Qt;
+Keywords=vpn;adguard;proxy;privacy;
+StartupWMClass=agv-gui

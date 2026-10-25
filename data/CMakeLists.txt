@@ -9,3 +9,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/agvd.service DESTINATION ${SYSTEMD_SYS
 install(FILES dbus/org.agv.Daemon1.conf DESTINATION ${CMAKE_INSTALL_DATADIR}/dbus-1/system.d)
 install(FILES dbus/org.agv.Daemon1.service DESTINATION ${CMAKE_INSTALL_DATADIR}/dbus-1/system-services)
 install(FILES polkit/org.agv.daemon.policy DESTINATION ${CMAKE_INSTALL_DATADIR}/polkit-1/actions)
+
+if(AGV_BUILD_GUI)
+    install(FILES agv-gui.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+endif()

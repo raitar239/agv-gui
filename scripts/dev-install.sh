@@ -13,6 +13,8 @@ set -eu
 
 LIBEXEC=/usr/local/libexec/agvd
 AGV_RUN=/usr/local/bin/agv-run
+AGV_GUI=/usr/local/bin/agv-gui
+DESKTOP=/usr/local/share/applications/agv-gui.desktop
 UNIT=/etc/systemd/system/agvd.service
 DBUS_POLICY=/etc/dbus-1/system.d/org.agv.Daemon1.conf
 POLKIT_ACTIONS=/usr/share/polkit-1/actions/org.agv.daemon.policy
@@ -31,7 +33,7 @@ if [ "${1:-}" = "--uninstall" ]; then
     # Routing state outlives the daemon on purpose (excluded apps keep working across restarts),
     # so remove it explicitly.
     [ -x "$LIBEXEC" ] && "$LIBEXEC" --cleanup --data-dir /var/lib/agvd || true
-    rm -f "$LIBEXEC" "$AGV_RUN" "$UNIT" "$DBUS_POLICY" "$POLKIT_ACTIONS"
+    rm -f "$LIBEXEC" "$AGV_RUN" "$AGV_GUI" "$DESKTOP" "$UNIT" "$DBUS_POLICY" "$POLKIT_ACTIONS"
     systemctl daemon-reload
     reload_dbus
     if [ "${2:-}" = "--purge" ]; then
@@ -53,6 +55,10 @@ fi
 
 install -Dm755 "$build/src/daemon/agvd" "$LIBEXEC"
 install -Dm755 "$build/src/run/agv-run" "$AGV_RUN"
+if [ -x "$build/src/gui/agv-gui" ]; then
+    install -Dm755 "$build/src/gui/agv-gui" "$AGV_GUI"
+    install -Dm644 "$src/data/agv-gui.desktop" "$DESKTOP"
+fi
 sed "s|@AGVD_PATH@|$LIBEXEC|" "$src/data/systemd/agvd.service.in" | install -Dm644 /dev/stdin "$UNIT"
 install -Dm644 "$src/data/dbus/org.agv.Daemon1.conf" "$DBUS_POLICY"
 install -Dm644 "$src/data/polkit/org.agv.daemon.policy" "$POLKIT_ACTIONS"

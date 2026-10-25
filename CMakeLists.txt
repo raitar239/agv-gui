@@ -16,9 +16,15 @@ include(CTest)
 # Qt 6.4 is the oldest supported version (Debian 12, Ubuntu 24.04).
 find_package(Qt6 6.4 REQUIRED COMPONENTS Core DBus Network)
 
+option(AGV_BUILD_GUI "Build the agv-gui window and tray" ON)
+
 add_subdirectory(src/common)
 add_subdirectory(src/daemon)
 add_subdirectory(src/run)
+if(AGV_BUILD_GUI)
+    find_package(Qt6 6.4 REQUIRED COMPONENTS Gui Widgets Quick QuickControls2)
+    add_subdirectory(src/gui)
+endif()
 add_subdirectory(data)
 
 if(BUILD_TESTING)

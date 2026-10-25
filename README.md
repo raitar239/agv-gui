@@ -4,8 +4,9 @@ A desktop client for [AdGuard VPN CLI](https://github.com/AdguardTeam/AdGuardVPN
 built with C++, Qt 6 and QML. Its main feature is the one the CLI lacks on Linux: **excluding
 individual apps from the VPN**, the way the Windows client does.
 
-> Early development. Done so far: the daemon core and its D-Bus API. The GUI and app
-> exclusions are not built yet. See [docs/PLAN.md](docs/PLAN.md).
+> Early development. Working: the daemon, app exclusions through `agv-run`, and the GUI (connect,
+> locations, website exclusions, account, tray). Picking apps in the GUI comes next.
+> See [docs/PLAN.md](docs/PLAN.md).
 
 ## Architecture
 
@@ -16,13 +17,20 @@ individual apps from the VPN**, the way the Windows client does.
 
 ## Build
 
-Requirements: CMake ≥ 3.22, a C++20 compiler, Qt ≥ 6.4 (Core, DBus, Test).
+Requirements: CMake ≥ 3.22, a C++20 compiler, Qt ≥ 6.4 (Core, DBus, Network, Gui, Widgets,
+Quick, QuickControls2, Test). `-DAGV_BUILD_GUI=OFF` builds only the daemon and `agv-run`.
 
 ```sh
 cmake -S . -B build -G Ninja
 cmake --build build
 ctest --test-dir build
 ```
+
+## Run the GUI
+
+With agvd installed (see below), start `./build/src/gui/agv-gui`. It lives in the tray; closing
+the window frees the interface. `--hidden` starts in the tray only. Against a development daemon
+on the session bus: `AGV_SESSION_BUS=1 ./build/src/gui/agv-gui`.
 
 ## Try the daemon without installing
 
