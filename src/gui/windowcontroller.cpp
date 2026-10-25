@@ -48,6 +48,13 @@ void WindowController::retranslate()
 
 void WindowController::screenshot(const QString &path, const QSize &size, int page, int delayMs)
 {
+    // Development: open and close a window first, as the tray does, to check that a second
+    // window in the same process still works.
+    if (qEnvironmentVariableIntValue("AGV_SCREENSHOT_REOPEN")) {
+        create();
+        destroy();
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    }
     QQuickWindow *window = create();
     if (!window) {
         // Called before app.exec(); exit() only works once the loop runs.

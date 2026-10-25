@@ -3,7 +3,7 @@
 
 pkgname=agv-gui-git
 _name=agv-gui
-pkgver=0.1.0.r12.g0283066
+pkgver=0.1.0.r13.gba4d850
 pkgrel=1
 pkgdesc='VPN client for AdGuard VPN CLI with per-app exclusions (Qt 6)'
 arch=('x86_64' 'aarch64')

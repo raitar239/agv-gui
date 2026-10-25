@@ -37,6 +37,18 @@ void pickIconTheme()
     }
 }
 
+// Exposes a process-wide object to QML. The window's engine is destroyed when it closes and a new
+// one is made when it reopens, so each engine must get the same object and none may delete it.
+// (qmlRegisterSingletonInstance binds the object to the first engine only.)
+template<typename T>
+void registerShared(const char *name, T *instance)
+{
+    qmlRegisterSingletonType<T>("Agv.Backend", 1, 0, name, [instance](QQmlEngine *, QJSEngine *) -> QObject * {
+        QQmlEngine::setObjectOwnership(instance, QQmlEngine::CppOwnership);
+        return instance;
+    });
+}
+
 } // namespace
 
 int main(int argc, char *argv[])
@@ -82,10 +94,10 @@ int main(int argc, char *argv[])
     DaemonClient daemon(sessionBus ? QDBusConnection::sessionBus() : QDBusConnection::systemBus());
     SystemTheme theme;
     Autostart autostart;
-    qmlRegisterSingletonInstance("Agv.Backend", 1, 0, "Daemon", &daemon);
-    qmlRegisterSingletonInstance("Agv.Backend", 1, 0, "SystemTheme", &theme);
-    qmlRegisterSingletonInstance("Agv.Backend", 1, 0, "Autostart", &autostart);
-    qmlRegisterSingletonInstance("Agv.Backend", 1, 0, "Language", &language);
+    registerShared("Daemon", &daemon);
+    registerShared("SystemTheme", &theme);
+    registerShared("Autostart", &autostart);
+    registerShared("Language", &language);
     qmlRegisterType<InstalledApps>("Agv.Backend", 1, 0, "InstalledApps");
 
     const bool tray = !screenshot && TrayIcon::isAvailable();

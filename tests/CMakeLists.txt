@@ -46,4 +46,13 @@ if(AGV_BUILD_GUI)
     # Gui: QAbstractItemModelTester checks the decoration role for QPixmap/QIcon values.
     target_link_libraries(tst_keyedlistmodel PRIVATE Qt6::Gui Qt6::Test)
     add_test(NAME keyedlistmodel COMMAND tst_keyedlistmodel)
+
+    # The real GUI, offscreen: a window is opened, closed and opened again in one process (as the
+    # tray does), then rendered. Any QML error on the way fails the test.
+    add_test(NAME gui_reopen
+        COMMAND agv-gui --screenshot ${CMAKE_CURRENT_BINARY_DIR}/gui_reopen.png --size 700x500)
+    set_tests_properties(gui_reopen PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_FORCE_STDERR_LOGGING=1;AGV_SCREENSHOT_REOPEN=1;AGV_SCREENSHOT_DELAY=1500;AGV_SESSION_BUS=1"
+        FAIL_REGULAR_EXPRESSION "TypeError|ReferenceError|Unable to assign|is not available|registerSingletonInstance|cannot load"
+        TIMEOUT 30)
 endif()
