@@ -274,6 +274,9 @@ private slots:
         QTest::newRow("idn") << QStringLiteral("пример.рф") << true;
         QTest::newRow("ipv4 port") << QStringLiteral("8.211.26.21:22102") << true;
         QTest::newRow("ipv6") << QStringLiteral("[2001:db8::1]:443") << true;
+        QTest::newRow("cidr") << QStringLiteral("8.211.0.0/16") << true;
+        QTest::newRow("ipv6 cidr") << QStringLiteral("2001:db8::/32") << true;
+        QTest::newRow("slash first") << QStringLiteral("/etc/passwd") << false;
         QTest::newRow("option") << QStringLiteral("--help") << false;
         QTest::newRow("space") << QStringLiteral("a.com b.com") << false;
         QTest::newRow("empty") << QString() << false;

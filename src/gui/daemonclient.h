@@ -16,6 +16,7 @@ class QDBusServiceWatcher;
 
 namespace agv {
 
+class KeyedListModel;
 class LocationModel;
 
 // The GUI's view of agvd: mirrors its properties, forwards actions, turns errors into
@@ -43,6 +44,9 @@ class DaemonClient : public QObject
     // Excluded apps: [{ id, name, icon, desktop_file, exe, cmdline_match, enabled, bytes_out, bytes_in }]
     Q_PROPERTY(QVariantList apps READ apps NOTIFY appsChanged)
     Q_PROPERTY(bool appsLoaded READ appsLoaded NOTIFY appsChanged)
+    // The same lists as models that update row by row, so views keep their scroll position.
+    Q_PROPERTY(QObject *siteExclusionModel READ siteExclusionModel CONSTANT)
+    Q_PROPERTY(QObject *appModel READ appModel CONSTANT)
 
 public:
     explicit DaemonClient(QDBusConnection bus, QObject *parent = nullptr);
@@ -66,6 +70,8 @@ public:
     QObject *locations() const;
     QVariantList apps() const { return m_apps; }
     bool appsLoaded() const { return m_appsLoaded; }
+    QObject *siteExclusionModel() const;
+    QObject *appModel() const;
     LocationModel *locationModel() const { return m_locations; }
 
     // Connects to a location (city, country or ISO code; empty: the last used one).
@@ -129,6 +135,8 @@ private:
     QDBusConnection m_bus;
     QDBusServiceWatcher *m_watcher;
     LocationModel *m_locations;
+    KeyedListModel *m_siteModel;
+    KeyedListModel *m_appModel;
     bool m_available = false;
     int m_busy = 0;
     QVariantMap m_props;

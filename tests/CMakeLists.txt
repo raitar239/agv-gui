@@ -40,4 +40,10 @@ if(AGV_BUILD_GUI)
     target_include_directories(tst_installedapps PRIVATE ${PROJECT_SOURCE_DIR}/src/gui)
     target_link_libraries(tst_installedapps PRIVATE Qt6::Core Qt6::Test)
     add_test(NAME installedapps COMMAND tst_installedapps)
+
+    add_executable(tst_keyedlistmodel tst_keyedlistmodel.cpp ${PROJECT_SOURCE_DIR}/src/gui/keyedlistmodel.cpp)
+    target_include_directories(tst_keyedlistmodel PRIVATE ${PROJECT_SOURCE_DIR}/src/gui)
+    # Gui: QAbstractItemModelTester checks the decoration role for QPixmap/QIcon values.
+    target_link_libraries(tst_keyedlistmodel PRIVATE Qt6::Gui Qt6::Test)
+    add_test(NAME keyedlistmodel COMMAND tst_keyedlistmodel)
 endif()

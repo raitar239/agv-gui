@@ -92,7 +92,7 @@ Item {
 
             ListView {
                 id: list
-                model: Daemon.siteExclusions
+                model: Daemon.siteExclusionModel
                 clip: true
                 spacing: 2
                 boundsBehavior: Flickable.StopAtBounds
@@ -102,7 +102,7 @@ Item {
 
                 delegate: Rectangle {
                     id: row
-                    required property string modelData
+                    required property string item
                     width: ListView.view.width
                     height: 44
                     radius: Theme.radiusSmall
@@ -119,7 +119,7 @@ Item {
                         anchors.rightMargin: 4
                         AppIcon { name: "globe"; size: 18; color: Theme.textSecondary }
                         Text {
-                            text: row.modelData
+                            text: row.item
                             color: Theme.text
                             font.pixelSize: Theme.fontBody
                             elide: Text.ElideMiddle
@@ -130,7 +130,7 @@ Item {
                             iconName: "close"
                             compact: true
                             opacity: rowMouse.containsMouse || hovered ? 1 : 0.5
-                            onClicked: Daemon.removeSiteExclusion(row.modelData)
+                            onClicked: Daemon.removeSiteExclusion(row.item)
                         }
                     }
                 }
@@ -186,7 +186,7 @@ Item {
             ListView {
                 id: appList
                 visible: Daemon.appExclusionsSupported
-                model: Daemon.apps
+                model: Daemon.appModel
                 clip: true
                 spacing: 2
                 boundsBehavior: Flickable.StopAtBounds
@@ -196,7 +196,8 @@ Item {
 
                 delegate: Rectangle {
                     id: app
-                    required property var modelData
+                    required property var model
+                    readonly property var modelData: model
                     width: ListView.view.width
                     height: 60
                     radius: Theme.radiusSmall

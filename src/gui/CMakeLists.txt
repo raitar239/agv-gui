@@ -6,6 +6,8 @@ qt_add_executable(agv-gui
     iconprovider.cpp
     installedapps.h
     installedapps.cpp
+    keyedlistmodel.h
+    keyedlistmodel.cpp
     locationmodel.h
     locationmodel.cpp
     systemtheme.h

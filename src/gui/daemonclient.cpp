@@ -1,5 +1,6 @@
 #include "daemonclient.h"
 
+#include "keyedlistmodel.h"
 #include "locationmodel.h"
 
 #include <QDBusArgument>
@@ -29,6 +30,9 @@ DaemonClient::DaemonClient(QDBusConnection bus, QObject *parent)
     , m_watcher(new QDBusServiceWatcher(DBusService, m_bus,
                                         QDBusServiceWatcher::WatchForOwnerChange, this))
     , m_locations(new LocationModel(this))
+    , m_siteModel(new KeyedListModel("item", {"item"}, this))
+    , m_appModel(new KeyedListModel("id", {"id", "name", "icon", "desktop_file", "exe", "cmdline_match", "enabled",
+                                           "bytes_out", "bytes_in"}, this))
 {
     registerDBusTypes();
 
@@ -56,6 +60,16 @@ DaemonClient::DaemonClient(QDBusConnection bus, QObject *parent)
 QObject *DaemonClient::locations() const
 {
     return m_locations;
+}
+
+QObject *DaemonClient::siteExclusionModel() const
+{
+    return m_siteModel;
+}
+
+QObject *DaemonClient::appModel() const
+{
+    return m_appModel;
 }
 
 bool DaemonClient::transitioning() const
@@ -113,6 +127,10 @@ void DaemonClient::refreshSiteExclusions()
         if (items != m_siteExclusions || !m_siteExclusionsLoaded) {
             m_siteExclusions = items;
             m_siteExclusionsLoaded = true;
+            QList<QVariantMap> rows;
+            for (const QString &item : items)
+                rows.append({{QStringLiteral("item"), item}});
+            m_siteModel->setRows(rows);
             emit siteExclusionsChanged();
         }
     });
@@ -226,6 +244,10 @@ void DaemonClient::publishApps()
         return a.toMap().value(QStringLiteral("name")).toString().localeAwareCompare(
                    b.toMap().value(QStringLiteral("name")).toString()) < 0;
     });
+    QList<QVariantMap> rows;
+    for (const QVariant &app : std::as_const(m_apps))
+        rows.append(app.toMap());
+    m_appModel->setRows(rows);
     emit appsChanged();
 }
 

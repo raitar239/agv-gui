@@ -457,8 +457,8 @@ void VpnService::logout(Done done)
 
 bool VpnService::isValidExclusion(const QString &item)
 {
-    // Domains (optionally "*." or "www."), IPv4/IPv6 with optional port, IDN letters allowed.
-    static const QRegularExpression pattern(QStringLiteral("^[\\p{L}\\p{N}*\\[][\\p{L}\\p{N}.*:\\[\\]_-]{0,299}$"));
+    // Domains (optionally "*." or "www."), IPv4/IPv6 with optional port or /prefix, IDN letters.
+    static const QRegularExpression pattern(QStringLiteral("^[\\p{L}\\p{N}*\\[][\\p{L}\\p{N}.*:/\\[\\]_-]{0,299}$"));
     return pattern.match(item).hasMatch();
 }
 
