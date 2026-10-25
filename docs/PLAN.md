@@ -143,13 +143,25 @@ cgroup v2 → nftables `socket cgroupv2` → `meta mark` → `ip rule fwmark` �
 - Если найден чужой запущенный `adguardvpn-cli connect` (другой `HOME`), демон не запускает второй
   экземпляр, а показывает в GUI: «VPN запущен вне agv-gui» с кнопкой «Перехватить» (disconnect
   чужого + connect своего).
-- D-Bus: черновик в `dbus/org.agv.Daemon1.xml`. Имя шины переименовать в принадлежащее проекту
-  пространство имён до первого релиза.
+- D-Bus: `dbus/org.agv.Daemon1.xml`, адаптор генерируется `qt_add_dbus_adaptor`. Имя шины
+  переименовать в принадлежащее проекту пространство имён до первого релиза.
+- **Вход — device code.** `adguardvpn-cli login` печатает ссылку и ждёт подтверждения в браузере,
+  TTY не нужен. Демон отдаёт ссылку сигналом `LoginUrl`, GUI открывает браузер; ссылка живёт ~30 мин.
+- Коды выхода: **11** — не выполнен вход (status, license, list-locations), **106** — ошибка вызова.
+  Исключения сайтов работают и без входа.
+- **polkit**: `org.agv.daemon.control` (подключение, исключения, лицензия) — активному пользователю
+  без пароля, как в NetworkManager; `org.agv.daemon.configure` (настройки, вход/выход) —
+  `auth_admin_keep`. Чтение — без проверки.
+- **`KillMode=process`** в unit: VPN-процесс (форк CLI) и исключённые приложения живут в cgroup
+  демона и не должны умирать при рестарте/обновлении `agvd`.
+- `setConfig` принимает только белый список ключей и значений; `tun-routing-mode` и
+  `tun-device-name` принадлежат движку маршрутизации и снаружи недоступны. Свободные значения не могут
+  начинаться с `-` (не примет за опцию).
+- CLI запускается с пустым окружением (только `HOME`, `PATH`, `LANG`, `TERM=dumb`, `NO_COLOR`),
+  команды — строго по одной.
 
 ### Открытые вопросы
 
-- Как работает `adguardvpn-cli login` (интерактивные вопросы? ссылка в браузер?) → от этого
-  зависит экран входа в GUI. Демон будет гонять его через pty.
 - Остальные аргументы route script: используется только `$1`; проверить, передаётся ли что-то ещё
   (временно залогировать `"$@"` и env).
 - Образцы `status` в состоянии connecting, вывод `connect` и `disconnect`.
@@ -184,9 +196,12 @@ cgroup v2 → nftables `socket cgroupv2` → `meta mark` → `ip rule fwmark` �
 1. **Разведка**: образцы вывода всех команд CLI; сохранить и разобрать дефолтный route script
    (аргументы, переменные, что он ставит). ✓ В основном сделано; хвосты — в «Открытых вопросах».
 2. Демон-ядро: D-Bus API, CliAdapter, статус, подключение, локации.
-   ✓ Парсеры CLI (`src/common/cliparser.*`) + 17 тестов на образцах. ✓ Черновик D-Bus XML.
-   Дальше: `CliRunner` (QProcess, фиксированный HOME, таймауты, коды выхода), каркас `agvd`
-   (systemd unit, D-Bus adaptor, polkit), опрос/кэш статуса.
+   ✓ Парсеры CLI (`src/common/cliparser.*`). ✓ `CliRunner`, `VpnService`, `DaemonService` + D-Bus
+   adaptor, `PolkitAuthorizer`, `agvd` (`--session` для разработки без root). ✓ systemd unit,
+   политика D-Bus, D-Bus activation, polkit policy. ✓ Тесты: парсер на образцах + сервис на
+   поддельном CLI (`tests/fake-adguardvpn-cli`). Проверено на сессионной шине с настоящим CLI.
+   Осталось: обнаружение чужого экземпляра VPN, импорт входа из `~/.local/share/adguardvpn-cli`,
+   проверка на системной шине от root (connect/disconnect, polkit).
 3. Движок маршрутизации: SCRIPT-режим, nftables, cgroup, agv-run.
 4. GUI MVP: главная, локации, сайты-исключения, трей, адаптивная сетка.
 5. Исключения приложений: выбор из .desktop, exec watcher, переписывание .desktop. Проверить

@@ -58,6 +58,24 @@ bool isUsageError(const QString &output)
         || text.contains(QLatin1String("The following arguments were not expected"));
 }
 
+bool isNotLoggedIn(int exitCode, const QString &output)
+{
+    if (exitCode == ExitNotLoggedIn)
+        return true;
+    const QString text = stripAnsi(output);
+    return text.contains(QLatin1String("You are not logged in"))
+        || text.contains(QLatin1String("Please log in"));
+}
+
+QString parseLoginUrl(const QString &output)
+{
+    static const QRegularExpression url(
+        QStringLiteral("authorize in your browser.*?(https://\\S+)"));
+
+    const auto match = url.match(stripAnsi(output));
+    return match.hasMatch() ? match.captured(1) : QString();
+}
+
 std::optional<Status> parseStatus(const QString &output)
 {
     static const QRegularExpression connected(
@@ -67,6 +85,8 @@ std::optional<Status> parseStatus(const QString &output)
         const QString trimmed = line.trimmed();
         if (trimmed == QLatin1String("VPN is disconnected"))
             return Status{};
+        if (trimmed == QLatin1String("You are not logged in"))
+            return Status{Status::State::NotLoggedIn, {}, {}, {}};
 
         const auto match = connected.match(trimmed);
         if (match.hasMatch()) {

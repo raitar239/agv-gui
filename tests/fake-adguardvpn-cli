@@ -1,0 +1,20 @@
+#!/bin/sh
+# Stand-in for adguardvpn-cli in daemon tests.
+#
+# CliRunner passes only HOME through, so the scenario lives there:
+#   $HOME/responses/<args joined by _>.out    printed to stdout
+#   $HOME/responses/<args joined by _>.code   exit code (default 0)
+#   $HOME/responses/<args joined by _>.sleep  seconds to sleep first
+# Every invocation is appended to $HOME/calls.log, one line per call, arguments separated by |.
+
+key=$(printf '%s_' "$@" | sed 's/_$//; s|/|%|g')
+printf '%s\n' "$(printf '%s|' "$@" | sed 's/|$//')" >> "$HOME/calls.log"
+
+base="$HOME/responses/$key"
+[ -f "$base.sleep" ] && sleep "$(cat "$base.sleep")"
+[ -f "$base.out" ] && cat "$base.out"
+[ -f "$base.code" ] && exit "$(cat "$base.code")"
+[ -f "$base.out" ] && exit 0
+
+echo "fake-adguardvpn-cli: no response for '$key'" >&2
+exit 106

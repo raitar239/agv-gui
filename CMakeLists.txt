@@ -10,12 +10,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_AUTOMOC ON)
 
-# Qt 6.4 is the oldest supported version (Debian 12, Ubuntu 24.04).
-find_package(Qt6 6.4 REQUIRED COMPONENTS Core)
-
+include(GNUInstallDirs)
 include(CTest)
 
+# Qt 6.4 is the oldest supported version (Debian 12, Ubuntu 24.04).
+find_package(Qt6 6.4 REQUIRED COMPONENTS Core DBus)
+
 add_subdirectory(src/common)
+add_subdirectory(src/daemon)
+add_subdirectory(data)
 
 if(BUILD_TESTING)
     find_package(Qt6 6.4 REQUIRED COMPONENTS Test)

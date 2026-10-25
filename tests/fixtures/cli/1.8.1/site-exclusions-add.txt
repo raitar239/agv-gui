@@ -1,0 +1,2 @@
+Domain exclusions do not apply to subdomains automatically. If you want to exclude subdomains, please add them explicitly or use a wildcard (e.g. "*.x.com")
+Successfully added 1 exclusions

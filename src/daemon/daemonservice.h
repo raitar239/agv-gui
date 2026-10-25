@@ -1,0 +1,90 @@
+#pragma once
+
+#include "dbustypes.h"
+
+#include <QDBusConnection>
+#include <QDBusContext>
+#include <QDBusMessage>
+#include <QObject>
+
+#include <functional>
+
+namespace agv {
+
+class PolkitAuthorizer;
+class VpnService;
+struct Error;
+
+// The object exported at /org/agv/Daemon. The adaptor generated from dbus/org.agv.Daemon1.xml
+// forwards every call here; methods that touch the CLI or polkit answer with delayed replies.
+class DaemonService : public QObject, protected QDBusContext
+{
+    Q_OBJECT
+    Q_PROPERTY(QString State READ state)
+    Q_PROPERTY(QString Location READ location)
+    Q_PROPERTY(QString Mode READ mode)
+    Q_PROPERTY(QString TunDevice READ tunDevice)
+    Q_PROPERTY(QString LastError READ lastError)
+    Q_PROPERTY(bool LoggedIn READ loggedIn)
+    Q_PROPERTY(QString SiteExclusionMode READ siteExclusionMode)
+    Q_PROPERTY(bool AppExclusionsSupported READ appExclusionsSupported)
+
+public:
+    DaemonService(VpnService *vpn, PolkitAuthorizer *polkit, QDBusConnection bus,
+                  QObject *parent = nullptr);
+
+    QString state() const;
+    QString location() const;
+    QString mode() const;
+    QString tunDevice() const;
+    QString lastError() const;
+    bool loggedIn() const;
+    QString siteExclusionMode() const;
+    bool appExclusionsSupported() const { return false; }
+
+public slots:
+    void Connect(const QString &location);
+    void ConnectFastest();
+    void Disconnect();
+    AgvLocationList ListLocations();
+
+    void Login();
+    void CancelLogin();
+    void Logout();
+    QVariantMap GetLicense();
+
+    void SetSiteExclusionMode(const QString &mode);
+    QStringList GetSiteExclusions();
+    void AddSiteExclusions(const QStringList &items);
+    void RemoveSiteExclusions(const QStringList &items);
+
+    AgvAppExclusionList ListAppExclusions();
+    QString AddAppExclusion(const QVariantMap &rule);
+    void UpdateAppExclusion(const QString &id, const QVariantMap &rule);
+    void RemoveAppExclusion(const QString &id);
+    AgvAppTrafficList GetAppTraffic();
+
+    AgvConfigMap GetConfig();
+    void SetConfig(const QString &key, const QString &value);
+
+signals:
+    void LoginUrl(const QString &url);
+    void LoginFinished(bool success, const QString &message);
+    void SiteExclusionsChanged();
+    void AppExclusionsChanged();
+
+private:
+    // Marks the current call as delayed, checks polkit, then runs action with a reply helper.
+    void authorized(const QString &actionId, std::function<void(QDBusMessage)> action);
+    void replyDone(const QDBusMessage &message, const Error &error);
+    void replyError(const QDBusMessage &message, const Error &error);
+    void notImplemented();
+    void emitPropertiesChanged(const QStringList &names);
+
+    VpnService *m_vpn;
+    PolkitAuthorizer *m_polkit;
+    QDBusConnection m_bus;
+    QVariantMap m_lastProperties;
+};
+
+} // namespace agv

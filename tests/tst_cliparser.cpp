@@ -61,6 +61,25 @@ private slots:
         QVERIFY(status->tunDevice.isEmpty());
     }
 
+    void notLoggedIn()
+    {
+        const auto status = parseStatus(fixture(QStringLiteral("status-not-logged-in.txt")));
+        QVERIFY(status);
+        QCOMPARE(status->state, Status::State::NotLoggedIn);
+
+        QVERIFY(isNotLoggedIn(ExitNotLoggedIn, QString()));
+        QVERIFY(isNotLoggedIn(1, fixture(QStringLiteral("list-locations-not-logged-in.txt"))));
+        QVERIFY(!isNotLoggedIn(0, fixture(QStringLiteral("status-connected.txt"))));
+        QVERIFY(!parseLocations(fixture(QStringLiteral("list-locations-not-logged-in.txt"))));
+    }
+
+    void loginUrl()
+    {
+        QCOMPARE(parseLoginUrl(fixture(QStringLiteral("login-prompt.txt"))),
+                 QStringLiteral("https://auth.example.com/device_code?user_code=ABCD-EFGH"));
+        QVERIFY(parseLoginUrl(QStringLiteral("You need to authorize in your browser.")).isEmpty());
+    }
+
     void statusUnknown()
     {
         QVERIFY(!parseStatus(QStringLiteral("Something new\n")));
@@ -166,10 +185,14 @@ private slots:
 
     void siteExclusionsEmpty()
     {
-        const auto exclusions = parseSiteExclusions(QStringLiteral("Exclusions for SELECTIVE mode:\n"));
+        const auto exclusions = parseSiteExclusions(fixture(QStringLiteral("site-exclusions-show-empty.txt")));
         QVERIFY(exclusions);
-        QCOMPARE(exclusions->mode, ExclusionMode::Selective);
+        QCOMPARE(exclusions->mode, ExclusionMode::General);
         QVERIFY(exclusions->domains.isEmpty());
+
+        const auto selective = parseSiteExclusions(QStringLiteral("Exclusions for SELECTIVE mode:\n"));
+        QVERIFY(selective);
+        QCOMPARE(selective->mode, ExclusionMode::Selective);
     }
 
     void license()

@@ -1,0 +1,5 @@
+[D-BUS Service]
+Name=org.agv.Daemon1
+Exec=/bin/false
+User=root
+SystemdService=dbus-org.agv.Daemon1.service

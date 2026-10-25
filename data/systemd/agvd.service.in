@@ -1,0 +1,25 @@
+[Unit]
+Description=AdGuard VPN GUI daemon
+Documentation=https://github.com/raitar239/agv-gui
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=dbus
+BusName=org.agv.Daemon1
+ExecStart=@AGVD_PATH@
+Restart=on-failure
+
+# HOME for adguardvpn-cli: its login and settings live in /var/lib/agvd.
+StateDirectory=agvd
+StateDirectoryMode=0700
+
+# App exclusions are sub-cgroups of this service (stage 3).
+Delegate=yes
+# Only stop agvd itself: the forked VPN process and excluded apps (games, browsers) live in this
+# cgroup too and must survive a daemon restart or upgrade.
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
+Alias=dbus-org.agv.Daemon1.service

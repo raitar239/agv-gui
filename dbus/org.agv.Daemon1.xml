@@ -1,12 +1,17 @@
 <!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
  "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
 <!--
-  agvd D-Bus API, draft. System bus, object path /org/agv/Daemon.
+  agvd D-Bus API. System bus, object path /org/agv/Daemon.
   The bus name must be renamed to a namespace the project owns (e.g. io.github.<owner>.Agv)
-  before the first release; nothing outside this file and its generated code should hardcode it.
+  before the first release; only this file and src/common/dbustypes.h hardcode it.
 
-  Read-only calls are allowed for any local active session. Everything that changes state
-  requires the polkit action org.agv.daemon.manage (auth_admin_keep by default).
+  Authorization (polkit, see data/polkit/org.agv.daemon.policy):
+    reads                                  - anyone allowed by the D-Bus policy
+    org.agv.daemon.control                 - connect, disconnect, exclusions, license
+    org.agv.daemon.configure               - settings, login, logout
+
+  Failed calls return org.agv.Error.* errors (NotLoggedIn, CliFailed, CliNotFound, Timeout,
+  UnexpectedOutput, InvalidArgument, Busy, NotAuthorized, NotImplemented).
 
   State changes are announced through org.freedesktop.DBus.Properties.PropertiesChanged.
 -->
@@ -15,15 +20,15 @@
 
     <!-- Connection -->
 
-    <!-- "disconnected", "connecting", "connected", "disconnecting", "error" -->
+    <!-- "unknown", "not-logged-in", "disconnected", "connecting", "connected", "disconnecting", "error" -->
     <property name="State" type="s" access="read"/>
     <!-- Location as reported by the CLI ("ATHENS"); empty when disconnected -->
     <property name="Location" type="s" access="read"/>
-    <!-- "TUN" or "SOCKS" -->
+    <!-- "TUN" or "SOCKS"; empty when disconnected -->
     <property name="Mode" type="s" access="read"/>
     <!-- "tun0"; empty in SOCKS mode or when disconnected -->
     <property name="TunDevice" type="s" access="read"/>
-    <!-- Human-readable reason of the last failure; empty when State is not "error" -->
+    <!-- Human-readable reason of the last failure -->
     <property name="LastError" type="s" access="read"/>
 
     <!-- location: city, country or ISO code; empty string means the last used location -->
@@ -33,16 +38,31 @@
     <method name="ConnectFastest"/>
     <method name="Disconnect"/>
 
-    <!-- Rows: (iso, country, city, ping_ms); ping_ms is -1 when unknown -->
     <method name="ListLocations">
       <arg name="locations" type="a(sssi)" direction="out"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="AgvLocationList"/>
     </method>
 
     <!-- Account -->
 
+    <property name="LoggedIn" type="b" access="read"/>
+
+    <!-- Starts device-code login; LoginUrl delivers the link to open in a browser -->
+    <method name="Login"/>
+    <method name="CancelLogin"/>
+    <method name="Logout"/>
+    <signal name="LoginUrl">
+      <arg name="url" type="s"/>
+    </signal>
+    <signal name="LoginFinished">
+      <arg name="success" type="b"/>
+      <arg name="message" type="s"/>
+    </signal>
+
     <!-- Keys: account (s), plan (s), max_devices (i), valid_until (s, ISO date) -->
     <method name="GetLicense">
       <arg name="license" type="a{sv}" direction="out"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="QVariantMap"/>
     </method>
 
     <!-- Site exclusions (adguardvpn-cli site-exclusions) -->
@@ -53,13 +73,13 @@
       <arg name="mode" type="s" direction="in"/>
     </method>
     <method name="GetSiteExclusions">
-      <arg name="domains" type="as" direction="out"/>
+      <arg name="items" type="as" direction="out"/>
     </method>
     <method name="AddSiteExclusions">
-      <arg name="domains" type="as" direction="in"/>
+      <arg name="items" type="as" direction="in"/>
     </method>
     <method name="RemoveSiteExclusions">
-      <arg name="domains" type="as" direction="in"/>
+      <arg name="items" type="as" direction="in"/>
     </method>
     <signal name="SiteExclusionsChanged"/>
 
@@ -74,31 +94,35 @@
     -->
     <method name="ListAppExclusions">
       <arg name="exclusions" type="a(sa{sv})" direction="out"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="AgvAppExclusionList"/>
     </method>
     <method name="AddAppExclusion">
       <arg name="rule" type="a{sv}" direction="in"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="QVariantMap"/>
       <arg name="id" type="s" direction="out"/>
     </method>
     <method name="UpdateAppExclusion">
       <arg name="id" type="s" direction="in"/>
       <arg name="rule" type="a{sv}" direction="in"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In1" value="QVariantMap"/>
     </method>
     <method name="RemoveAppExclusion">
       <arg name="id" type="s" direction="in"/>
     </method>
-    <!-- Per-app traffic counters: (id, bytes_out, bytes_in) -->
     <method name="GetAppTraffic">
       <arg name="traffic" type="a(stt)" direction="out"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="AgvAppTrafficList"/>
     </method>
     <signal name="AppExclusionsChanged"/>
 
     <!-- Configuration (adguardvpn-cli config show / set-*) -->
 
-    <!-- Keys are CLI labels ("Tunnel routing mode"); value is (value, is_default) -->
+    <!-- Keys are CLI labels ("Tunnel routing mode") -->
     <method name="GetConfig">
       <arg name="config" type="a{s(sb)}" direction="out"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="AgvConfigMap"/>
     </method>
-    <!-- key is the set-* subcommand without the prefix ("protocol", "dns", ...) -->
+    <!-- key is a set-* subcommand without the prefix ("protocol", "dns", ...) -->
     <method name="SetConfig">
       <arg name="key" type="s" direction="in"/>
       <arg name="value" type="s" direction="in"/>

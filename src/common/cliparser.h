@@ -22,11 +22,22 @@ namespace agv::cli {
 // Removes ANSI escape sequences. The CLI emits them even when stdout is not a TTY.
 QString stripAnsi(const QString &text);
 
+// Exit codes observed in CLI 1.8.1.
+constexpr int ExitNotLoggedIn = 11;
+constexpr int ExitUsageError = 106;
+
 // True for "A subcommand is required" and similar usage errors followed by a help dump.
 bool isUsageError(const QString &output);
 
+// True when a command failed because there is no logged-in account.
+bool isNotLoggedIn(int exitCode, const QString &output);
+
+// adguardvpn-cli login prints a device-code URL and waits until it is confirmed in a browser.
+// Returns the URL, or an empty string when the output does not contain it (yet).
+QString parseLoginUrl(const QString &output);
+
 struct Status {
-    enum class State { Disconnected, Connected };
+    enum class State { Disconnected, Connected, NotLoggedIn };
 
     State state = State::Disconnected;
     QString location;   // "ATHENS"; empty when disconnected
