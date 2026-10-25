@@ -8,6 +8,7 @@ ApplicationWindow {
     id: window
 
     property int currentPage: 0
+    property string screenshotState  // development: set by --screenshot
 
     // Breakpoints by width; heights below 480 (a horizontal half on a laptop) tighten spacing.
     readonly property string layoutMode: width < 520 ? "compact" : width < 900 ? "medium" : "expanded"

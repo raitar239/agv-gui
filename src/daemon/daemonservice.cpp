@@ -200,7 +200,7 @@ void DaemonService::RemoveSiteExclusions(const QStringList &items)
 AgvAppExclusionList DaemonService::ListAppExclusions()
 {
     AgvAppExclusionList result;
-    for (const AppRule &rule : m_apps->rules())
+    for (const AppRule &rule : m_apps->rules(callerUid(message())))
         result.append({rule.id, AppStore::toMap(rule)});
     return result;
 }
@@ -209,7 +209,7 @@ QString DaemonService::AddAppExclusion(const QVariantMap &rule)
 {
     authorized(ActionControl, [this, rule](const QDBusMessage &message) {
         QString id;
-        const Error error = m_apps->add(rule, &id);
+        const Error error = m_apps->add(rule, callerUid(message), &id);
         if (!error.isOk())
             replyError(message, error);
         else
@@ -221,14 +221,14 @@ QString DaemonService::AddAppExclusion(const QVariantMap &rule)
 void DaemonService::UpdateAppExclusion(const QString &id, const QVariantMap &rule)
 {
     authorized(ActionControl, [this, id, rule](const QDBusMessage &message) {
-        replyDone(message, m_apps->update(id, rule));
+        replyDone(message, m_apps->update(id, rule, callerUid(message)));
     });
 }
 
 void DaemonService::RemoveAppExclusion(const QString &id)
 {
     authorized(ActionControl, [this, id](const QDBusMessage &message) {
-        replyDone(message, m_apps->remove(id));
+        replyDone(message, m_apps->remove(id, callerUid(message)));
     });
 }
 
@@ -281,6 +281,13 @@ void DaemonService::authorized(const QString &actionId, std::function<void(QDBus
             : errors::NotAuthorized;
         replyError(message, {name, result.message});
     });
+}
+
+qint64 DaemonService::callerUid(const QDBusMessage &message) const
+{
+    const QDBusReply<uint> uid = m_bus.interface()->serviceUid(message.service());
+    // Unknown callers see and own nothing (uid -2 matches no rule owner).
+    return uid.isValid() ? qint64(uid.value()) : -2;
 }
 
 void DaemonService::replyDone(const QDBusMessage &message, const Error &error)

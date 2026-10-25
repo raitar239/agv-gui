@@ -1,4 +1,5 @@
 #include "daemonclient.h"
+#include "installedapps.h"
 #include "systemtheme.h"
 #include "trayicon.h"
 #include "windowcontroller.h"
@@ -6,11 +7,34 @@
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QDBusConnection>
+#include <QDir>
 #include <QIcon>
+#include <QSettings>
 #include <QQmlEngine>
 #include <QQuickStyle>
 
 using namespace agv;
+
+namespace {
+
+// Outside a full desktop (Hyprland, sway…) Qt often knows no icon theme; GTK's setting usually
+// names the one the user picked.
+void pickIconTheme()
+{
+    const QString current = QIcon::themeName();
+    if (!current.isEmpty() && current != QLatin1String("hicolor"))
+        return;
+    for (const QString &file : {QDir::homePath() + QStringLiteral("/.config/gtk-4.0/settings.ini"),
+                                QDir::homePath() + QStringLiteral("/.config/gtk-3.0/settings.ini")}) {
+        const QString theme = QSettings(file, QSettings::IniFormat).value(QStringLiteral("Settings/gtk-icon-theme-name")).toString();
+        if (!theme.isEmpty()) {
+            QIcon::setThemeName(theme);
+            return;
+        }
+    }
+}
+
+} // namespace
 
 int main(int argc, char *argv[])
 {
@@ -44,6 +68,8 @@ int main(int argc, char *argv[])
         return 0;
 
     QQuickStyle::setStyle(QStringLiteral("Basic"));
+    pickIconTheme();
+    QIcon::setFallbackThemeName(QStringLiteral("hicolor"));
 
     // AGV_SESSION_BUS=1 talks to "agvd --session" during development.
     const bool sessionBus = qEnvironmentVariableIntValue("AGV_SESSION_BUS") == 1;
@@ -51,6 +77,7 @@ int main(int argc, char *argv[])
     SystemTheme theme;
     qmlRegisterSingletonInstance("Agv.Backend", 1, 0, "Daemon", &daemon);
     qmlRegisterSingletonInstance("Agv.Backend", 1, 0, "SystemTheme", &theme);
+    qmlRegisterType<InstalledApps>("Agv.Backend", 1, 0, "InstalledApps");
 
     const bool tray = !screenshot && TrayIcon::isAvailable();
     // Without a tray, closing the window is the only way out, so it quits.

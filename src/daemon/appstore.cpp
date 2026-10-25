@@ -69,10 +69,13 @@ QString AppStore::load()
         const QVariantMap map = value.toObject().toVariantMap();
         const QString id = map.value(QStringLiteral("id")).toString();
         QString error;
-        auto rule = fromMap(map, &error);
+        QVariantMap fields = map;
+        const qint64 owner = fields.take(QStringLiteral("owner_uid")).toLongLong();
+        auto rule = fromMap(fields, &error);
         if (!isValidId(id) || !rule || find(id))
             return QStringLiteral("%1 contains an invalid entry %2 %3").arg(m_path, id, error);
         rule->id = id;
+        rule->ownerUid = map.contains(QStringLiteral("owner_uid")) ? owner : -1;
         m_rules.append(*rule);
     }
     return {};
@@ -84,6 +87,7 @@ QString AppStore::save() const
     for (const AppRule &rule : m_rules) {
         QVariantMap map = toMap(rule);
         map.insert(QStringLiteral("id"), rule.id);
+        map.insert(QStringLiteral("owner_uid"), rule.ownerUid);
         apps.append(QJsonObject::fromVariantMap(map));
     }
     const QJsonObject root{{QStringLiteral("version"), FormatVersion}, {QStringLiteral("apps"), apps}};

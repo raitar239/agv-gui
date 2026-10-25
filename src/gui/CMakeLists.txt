@@ -2,6 +2,10 @@ qt_add_executable(agv-gui
     main.cpp
     daemonclient.h
     daemonclient.cpp
+    iconprovider.h
+    iconprovider.cpp
+    installedapps.h
+    installedapps.cpp
     locationmodel.h
     locationmodel.cpp
     systemtheme.h
@@ -36,6 +40,8 @@ qt_add_qml_module(agv-gui
         qml/NavRail.qml
         qml/Segmented.qml
         qml/Toast.qml
+        qml/Toggle.qml
+        qml/AppPicker.qml
         qml/HomePage.qml
         qml/LocationsPage.qml
         qml/ExclusionsPage.qml

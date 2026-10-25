@@ -11,6 +11,8 @@
 #include <QRegularExpression>
 #include <QUrl>
 
+#include <algorithm>
+
 namespace agv {
 
 namespace {
@@ -45,6 +47,8 @@ DaemonClient::DaemonClient(QDBusConnection bus, QObject *parent)
                   SLOT(onLoginFinished(bool,QString)));
     m_bus.connect(DBusService, DBusPath, DBusInterface, QStringLiteral("SiteExclusionsChanged"), this,
                   SLOT(onSiteExclusionsChanged()));
+    m_bus.connect(DBusService, DBusPath, DBusInterface, QStringLiteral("AppExclusionsChanged"), this,
+                  SLOT(onAppExclusionsChanged()));
 
     loadAll();
 }
@@ -139,6 +143,90 @@ void DaemonClient::removeSiteExclusion(const QString &item)
 void DaemonClient::setSiteExclusionMode(const QString &mode)
 {
     call(QStringLiteral("SetSiteExclusionMode"), {mode}, [this](const QDBusMessage &) { refreshSiteExclusions(); });
+}
+
+void DaemonClient::refreshApps()
+{
+    call(QStringLiteral("ListAppExclusions"), {}, [this](const QDBusMessage &reply) {
+        m_appRules = qdbus_cast<AgvAppExclusionList>(reply.arguments().value(0));
+        m_appsLoaded = true;
+        publishApps();
+    });
+}
+
+void DaemonClient::refreshAppTraffic()
+{
+    if (!m_available || m_appRules.isEmpty())
+        return;
+    call(QStringLiteral("GetAppTraffic"), {}, [this](const QDBusMessage &reply) {
+        const auto traffic = qdbus_cast<AgvAppTrafficList>(reply.arguments().value(0));
+        m_traffic.clear();
+        for (const AgvAppTraffic &entry : traffic)
+            m_traffic.insert(entry.id, {entry.bytesOut, entry.bytesIn});
+        publishApps();
+    });
+}
+
+void DaemonClient::addApp(const QVariantMap &fields)
+{
+    // Only send what the daemon knows; empty strings are fine.
+    static const QStringList keys{QStringLiteral("name"), QStringLiteral("icon"), QStringLiteral("desktop_file"),
+                                  QStringLiteral("exe"), QStringLiteral("cmdline_match")};
+    QVariantMap rule;
+    for (const QString &key : keys) {
+        if (fields.contains(key))
+            rule.insert(key, fields.value(key).toString());
+    }
+    call(QStringLiteral("AddAppExclusion"), {rule}, [this, name = rule.value(QStringLiteral("name")).toString()](const QDBusMessage &) {
+        emit info(tr("%1 now bypasses the VPN. Restart it if it was already running.").arg(name));
+        refreshApps();
+    });
+}
+
+void DaemonClient::setAppEnabled(const QString &id, bool enabled)
+{
+    call(QStringLiteral("UpdateAppExclusion"), {id, QVariantMap{{QStringLiteral("enabled"), enabled}}},
+         [this](const QDBusMessage &) { refreshApps(); });
+}
+
+void DaemonClient::removeApp(const QString &id)
+{
+    call(QStringLiteral("RemoveAppExclusion"), {id}, [this](const QDBusMessage &) { refreshApps(); });
+}
+
+bool DaemonClient::isAppExcluded(const QString &desktopFile, const QString &exe) const
+{
+    for (const AgvAppExclusion &app : m_appRules) {
+        const QString file = app.rule.value(QStringLiteral("desktop_file")).toString();
+        const QString program = app.rule.value(QStringLiteral("exe")).toString();
+        if ((!desktopFile.isEmpty() && file == desktopFile) || (!exe.isEmpty() && program == exe))
+            return true;
+    }
+    return false;
+}
+
+void DaemonClient::onAppExclusionsChanged()
+{
+    refreshApps();
+}
+
+void DaemonClient::publishApps()
+{
+    m_apps.clear();
+    for (const AgvAppExclusion &app : m_appRules) {
+        QVariantMap entry = app.rule;
+        entry.insert(QStringLiteral("id"), app.id);
+        const auto traffic = m_traffic.value(app.id);
+        // QML numbers are doubles; byte counts stay exact far beyond what an app will use.
+        entry.insert(QStringLiteral("bytes_out"), double(traffic.first));
+        entry.insert(QStringLiteral("bytes_in"), double(traffic.second));
+        m_apps.append(entry);
+    }
+    std::sort(m_apps.begin(), m_apps.end(), [](const QVariant &a, const QVariant &b) {
+        return a.toMap().value(QStringLiteral("name")).toString().localeAwareCompare(
+                   b.toMap().value(QStringLiteral("name")).toString()) < 0;
+    });
+    emit appsChanged();
 }
 
 void DaemonClient::refreshLicense()
@@ -264,6 +352,7 @@ void DaemonClient::loadAll()
             return;
         applyProperties(qdbus_cast<QVariantMap>(reply.arguments().value(0)));
         refreshSiteExclusions();
+        refreshApps();
         if (loggedIn()) {
             refreshLocations();
             refreshLicense();

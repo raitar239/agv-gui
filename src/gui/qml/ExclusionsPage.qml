@@ -7,7 +7,10 @@ import Agv.Backend
 Item {
     id: page
 
-    property string tab: "sites"
+    // Development hook for --screenshot (AGV_SCREENSHOT_STATE=apps or apps-picker).
+    readonly property string shotState: Window.window ? Window.window.screenshotState : ""
+    property string tab: shotState.startsWith("apps") ? "apps" : "sites"
+    onShotStateChanged: if (shotState === "apps-picker") picker.open()
     readonly property bool general: Daemon.siteExclusionMode !== "selective"
 
     ColumnLayout {
@@ -160,50 +163,134 @@ Item {
                 text: qsTr("They need cgroup v2, nftables and the agvd service running as root.")
                 Layout.fillWidth: true
             }
-            Card {
+
+            RowLayout {
                 visible: Daemon.appExclusionsSupported
+                spacing: 12
                 Layout.fillWidth: true
-                ColumnLayout {
-                    width: parent.width
-                    spacing: 8
-                    Text {
-                        text: qsTr("Run a program outside the VPN")
-                        color: Theme.text
-                        font.pixelSize: Theme.fontBody
-                        font.weight: Font.DemiBold
+                Text {
+                    text: qsTr("These apps go straight to the internet, however they are started.")
+                    color: Theme.textSecondary
+                    font.pixelSize: Theme.fontSmall
+                    wrapMode: Text.Wrap
+                    Layout.fillWidth: true
+                }
+                FlatButton {
+                    kind: "primary"
+                    iconName: "plus"
+                    text: qsTr("Add app")
+                    onClicked: picker.open()
+                }
+            }
+
+            ListView {
+                id: appList
+                visible: Daemon.appExclusionsSupported
+                model: Daemon.apps
+                clip: true
+                spacing: 2
+                boundsBehavior: Flickable.StopAtBounds
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+
+                delegate: Rectangle {
+                    id: app
+                    required property var modelData
+                    width: ListView.view.width
+                    height: 60
+                    radius: Theme.radiusSmall
+                    color: appMouse.containsMouse ? Theme.surfaceHover : "transparent"
+
+                    MouseArea {
+                        id: appMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
                     }
-                    Text {
-                        text: qsTr("Start it with agv-run. Everything it launches stays outside the VPN too, e.g. a game started from Lutris or Steam.")
-                        color: Theme.textSecondary
-                        font.pixelSize: Theme.fontSmall
-                        wrapMode: Text.Wrap
-                        Layout.fillWidth: true
-                    }
-                    Rectangle {
-                        color: Theme.dark ? "#151515" : "#f3f3f3"
-                        radius: Theme.radiusSmall
-                        implicitHeight: 36
-                        Layout.fillWidth: true
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            anchors.left: parent.left
-                            anchors.leftMargin: 12
-                            text: "agv-run lutris"
-                            color: Theme.text
-                            font.family: "monospace"
-                            font.pixelSize: Theme.fontBody
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 12
+                        anchors.rightMargin: 4
+                        spacing: 12
+
+                        Image {
+                            source: picker.iconSource(app.modelData.icon)
+                            sourceSize: Qt.size(32, 32)
+                            Layout.preferredWidth: 32
+                            Layout.preferredHeight: 32
+                            opacity: app.modelData.enabled ? 1 : 0.45
+                        }
+                        ColumnLayout {
+                            spacing: 2
+                            Layout.fillWidth: true
+                            Text {
+                                text: app.modelData.name
+                                color: app.modelData.enabled ? Theme.text : Theme.textSecondary
+                                font.pixelSize: Theme.fontBody
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
+                            }
+                            Text {
+                                readonly property string what: app.modelData.cmdline_match !== ""
+                                    ? qsTr("Command line: %1").arg(app.modelData.cmdline_match)
+                                    : app.modelData.exe
+                                readonly property real total: app.modelData.bytes_out + app.modelData.bytes_in
+                                text: total > 0 ? "↑ %1  ↓ %2".arg(Theme.formatBytes(app.modelData.bytes_out))
+                                                              .arg(Theme.formatBytes(app.modelData.bytes_in))
+                                                : what
+                                color: Theme.textSecondary
+                                font.pixelSize: Theme.fontSmall
+                                elide: Text.ElideMiddle
+                                Layout.fillWidth: true
+                            }
+                        }
+                        Toggle {
+                            checked: app.modelData.enabled
+                            onToggled: (checked) => Daemon.setAppEnabled(app.modelData.id, checked)
+                        }
+                        FlatButton {
+                            kind: "subtle"
+                            iconName: "close"
+                            compact: true
+                            opacity: appMouse.containsMouse || hovered ? 1 : 0.5
+                            onClicked: Daemon.removeApp(app.modelData.id)
                         }
                     }
+                }
+
+                Column {
+                    anchors.centerIn: parent
+                    width: parent.width - 2 * Theme.spacing
+                    visible: appList.count === 0
+                    spacing: 6
                     Text {
-                        text: qsTr("Choosing apps from a list arrives in the next version.")
+                        width: parent.width
+                        text: Daemon.appsLoaded ? qsTr("No apps yet") : qsTr("Loading…")
+                        color: Theme.text
+                        font.pixelSize: Theme.fontBody
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+                    Text {
+                        visible: Daemon.appsLoaded
+                        width: parent.width
+                        text: qsTr("Add a game or a program that should not use the VPN. You can also start anything outside the VPN with: agv-run <command>")
                         color: Theme.textSecondary
                         font.pixelSize: Theme.fontSmall
+                        horizontalAlignment: Text.AlignHCenter
                         wrapMode: Text.Wrap
-                        Layout.fillWidth: true
                     }
                 }
             }
-            Item { Layout.fillHeight: true }
+
+            Timer {
+                interval: 2000
+                repeat: true
+                triggeredOnStart: true
+                running: page.visible && page.tab === "apps" && Daemon.apps.length > 0
+                onTriggered: Daemon.refreshAppTraffic()
+            }
         }
     }
+
+    AppPicker { id: picker }
 }

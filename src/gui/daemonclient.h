@@ -3,7 +3,9 @@
 #include "dbustypes.h"
 
 #include <QDBusConnection>
+#include <QHash>
 #include <QObject>
+#include <QPair>
 #include <QStringList>
 #include <QVariantMap>
 
@@ -38,6 +40,9 @@ class DaemonClient : public QObject
     Q_PROPERTY(QVariantMap license READ license NOTIFY licenseChanged)
     Q_PROPERTY(bool loginPending READ loginPending NOTIFY loginPendingChanged)
     Q_PROPERTY(QObject *locations READ locations CONSTANT)
+    // Excluded apps: [{ id, name, icon, desktop_file, exe, cmdline_match, enabled, bytes_out, bytes_in }]
+    Q_PROPERTY(QVariantList apps READ apps NOTIFY appsChanged)
+    Q_PROPERTY(bool appsLoaded READ appsLoaded NOTIFY appsChanged)
 
 public:
     explicit DaemonClient(QDBusConnection bus, QObject *parent = nullptr);
@@ -59,6 +64,8 @@ public:
     QVariantMap license() const { return m_license; }
     bool loginPending() const { return m_loginPending; }
     QObject *locations() const;
+    QVariantList apps() const { return m_apps; }
+    bool appsLoaded() const { return m_appsLoaded; }
     LocationModel *locationModel() const { return m_locations; }
 
     // Connects to a location (city, country or ISO code; empty: the last used one).
@@ -75,6 +82,15 @@ public:
     Q_INVOKABLE void removeSiteExclusion(const QString &item);
     Q_INVOKABLE void setSiteExclusionMode(const QString &mode);
 
+    Q_INVOKABLE void refreshApps();
+    Q_INVOKABLE void refreshAppTraffic();
+    // fields: name, icon, desktop_file, exe, cmdline_match (as in the D-Bus API)
+    Q_INVOKABLE void addApp(const QVariantMap &fields);
+    Q_INVOKABLE void setAppEnabled(const QString &id, bool enabled);
+    Q_INVOKABLE void removeApp(const QString &id);
+    // True when an app with this .desktop file or program is already in the list.
+    Q_INVOKABLE bool isAppExcluded(const QString &desktopFile, const QString &exe) const;
+
     Q_INVOKABLE void refreshLicense();
     Q_INVOKABLE void login();
     Q_INVOKABLE void cancelLogin();
@@ -87,6 +103,7 @@ signals:
     void busyChanged();
     void siteExclusionsChanged();
     void licenseChanged();
+    void appsChanged();
     void loginPendingChanged();
     void errorOccurred(const QString &message);
     void info(const QString &message);
@@ -96,6 +113,7 @@ private slots:
     void onLoginUrl(const QString &url);
     void onLoginFinished(bool success, const QString &message);
     void onSiteExclusionsChanged();
+    void onAppExclusionsChanged();
 
 private:
     using Reply = std::function<void(const QDBusMessage &)>;
@@ -105,6 +123,7 @@ private:
     void loadAll();
     void applyProperties(const QVariantMap &props);
     void setBusy(bool busy);
+    void publishApps();
     static QString describe(const QDBusMessage &error);
 
     QDBusConnection m_bus;
@@ -117,6 +136,10 @@ private:
     QStringList m_siteExclusions;
     bool m_siteExclusionsLoaded = false;
     QVariantMap m_license;
+    AgvAppExclusionList m_appRules;
+    QHash<QString, QPair<quint64, quint64>> m_traffic;
+    QVariantList m_apps;
+    bool m_appsLoaded = false;
     bool m_loginPending = false;
 };
 

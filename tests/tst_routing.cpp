@@ -9,6 +9,8 @@
 #include <QTemporaryDir>
 #include <QTest>
 
+#include <unistd.h>
+
 using namespace agv;
 
 namespace {
@@ -354,14 +356,14 @@ private slots:
         QVERIFY(apps.isSupported());
 
         QString id;
-        QVERIFY(apps.add({{QStringLiteral("name"), QStringLiteral("Firefox")}}, &id).isOk());
+        QVERIFY(apps.add({{QStringLiteral("name"), QStringLiteral("Firefox")}}, getuid(), &id).isOk());
         QVERIFY(QFileInfo(system.appDir(id)).isDir());
         QVERIFY(apps.moveProcess(100, id).isOk());
         QVERIFY(apps.moveProcess(101, QString()).isOk()); // builtin agv-run group
         QCOMPARE(apps.moveProcess(102, QStringLiteral("app-deadbeef")).name, errors::NotFound);
 
         // Disabled apps lose their cgroup and cannot take new processes.
-        QVERIFY(apps.update(id, {{QStringLiteral("enabled"), false}}).isOk());
+        QVERIFY(apps.update(id, {{QStringLiteral("enabled"), false}}, getuid()).isOk());
         QCOMPARE(apps.moveProcess(103, id).name, errors::NotFound);
         QVERIFY(system.ownProcs().contains("100"));
 
@@ -369,7 +371,7 @@ private slots:
         const QByteArray saved = readFile(dir.path() + QStringLiteral("/apps.json"));
         commands.answers.insert(QStringLiteral("nft -f -"), {1, "Error: boom"});
         QString second;
-        const Error error = apps.add({{QStringLiteral("name"), QStringLiteral("Steam")}}, &second);
+        const Error error = apps.add({{QStringLiteral("name"), QStringLiteral("Steam")}}, getuid(), &second);
         QCOMPARE(error.name, errors::SystemFailed);
         QCOMPARE(apps.rules().size(), 1);
         QCOMPARE(readFile(dir.path() + QStringLiteral("/apps.json")), saved);
@@ -388,7 +390,7 @@ private slots:
 
         QVERIFY(!apps.isSupported());
         QString id;
-        QCOMPARE(apps.add({{QStringLiteral("name"), QStringLiteral("x")}}, &id).name, errors::NotSupported);
+        QCOMPARE(apps.add({{QStringLiteral("name"), QStringLiteral("x")}}, getuid(), &id).name, errors::NotSupported);
         QVERIFY(commands.commands().filter(QStringLiteral("nft -f")).isEmpty());
     }
 };

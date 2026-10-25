@@ -81,6 +81,7 @@ signals:
 private:
     // Marks the current call as delayed, checks polkit, then runs action with a reply helper.
     void authorized(const QString &actionId, std::function<void(QDBusMessage)> action);
+    qint64 callerUid(const QDBusMessage &message) const;
     void replyDone(const QDBusMessage &message, const Error &error);
     void replyError(const QDBusMessage &message, const Error &error);
     void emitPropertiesChanged(const QStringList &names);

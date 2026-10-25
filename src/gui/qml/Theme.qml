@@ -50,6 +50,17 @@ QtObject {
     readonly property int animFast: 150
     readonly property int animNormal: 200
 
+    function formatBytes(bytes) {
+        const units = ["B", "KB", "MB", "GB", "TB"]
+        let value = bytes
+        let unit = 0
+        while (value >= 1024 && unit < units.length - 1) {
+            value /= 1024
+            ++unit
+        }
+        return (unit === 0 || value >= 100 ? Math.round(value) : value.toFixed(1)) + " " + units[unit]
+    }
+
     function pingColor(ping) {
         if (ping < 0)
             return textDisabled

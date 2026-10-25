@@ -1,5 +1,7 @@
 #include "windowcontroller.h"
 
+#include "iconprovider.h"
+
 #include <QCoreApplication>
 #include <QDBusConnection>
 #include <QDBusMessage>
@@ -47,6 +49,8 @@ void WindowController::screenshot(const QString &path, const QSize &size, int pa
         return;
     }
     window->setProperty("currentPage", page);
+    // e.g. "apps" or "apps-picker": which tab or dialog to show in the shot.
+    window->setProperty("screenshotState", qEnvironmentVariable("AGV_SCREENSHOT_STATE"));
     window->resize(size);
     window->show();
     QTimer::singleShot(delayMs, this, [window, path] {
@@ -60,6 +64,7 @@ QQuickWindow *WindowController::create()
     m_engine = new QQmlApplicationEngine(this);
     // Default since Qt 6.5; Qt 6.4 needs it to find the Agv module.
     m_engine->addImportPath(QStringLiteral("qrc:/qt/qml"));
+    m_engine->addImageProvider(QStringLiteral("appicon"), new AppIconProvider);
     m_engine->load(MainQml);
     if (m_engine->rootObjects().isEmpty()) {
         qCritical("agv-gui: cannot load the user interface");

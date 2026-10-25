@@ -2,11 +2,15 @@
 add_library(agvd-core STATIC
     appexclusionservice.h
     appexclusionservice.cpp
+    appmatcher.h
+    appmatcher.cpp
     appstore.h
     appstore.cpp
     clirunner.h
     clirunner.cpp
     daemonerror.h
+    execwatcher.h
+    execwatcher.cpp
     vpnservice.h
     vpnservice.cpp
     hostsystem.h

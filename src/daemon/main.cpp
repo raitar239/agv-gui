@@ -3,6 +3,7 @@
 #include "clirunner.h"
 #include "daemon1adaptor.h"
 #include "daemonservice.h"
+#include "execwatcher.h"
 #include "dbustypes.h"
 #include "polkitauthorizer.h"
 #include "routingengine.h"
@@ -147,6 +148,18 @@ int main(int argc, char *argv[])
     }
 
     apps.start();
+
+    // Catch excluded apps however they are started (menu, terminal, Lutris, Steam…).
+    ExecWatcher execWatcher;
+    if (apps.isSupported()) {
+        if (execWatcher.start()) {
+            QObject::connect(&execWatcher, &ExecWatcher::executed, &apps, &AppExclusionService::onExecuted);
+            QObject::connect(&execWatcher, &ExecWatcher::overflowed, &apps, &AppExclusionService::scanRunning);
+        } else {
+            qWarning("agvd: exec watcher unavailable (%s); apps are excluded only through agv-run",
+                     qPrintable(execWatcher.errorString()));
+        }
+    }
 
     const QString runtimeDir = parser.isSet(runtimeDirOption) ? parser.value(runtimeDirOption)
                                                               : defaultRuntimeDir(session);

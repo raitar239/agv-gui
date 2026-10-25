@@ -4,8 +4,9 @@ A desktop client for [AdGuard VPN CLI](https://github.com/AdguardTeam/AdGuardVPN
 built with C++, Qt 6 and QML. Its main feature is the one the CLI lacks on Linux: **excluding
 individual apps from the VPN**, the way the Windows client does.
 
-> Early development. Working: the daemon, app exclusions through `agv-run`, and the GUI (connect,
-> locations, website exclusions, account, tray). Picking apps in the GUI comes next.
+> Early development. Working: the daemon, the GUI (connect, locations with favorites, website
+> exclusions, account, tray) and per-app exclusions: pick apps in the GUI and they bypass the VPN
+> however they are started, or run anything outside it with `agv-run <command>`.
 > See [docs/PLAN.md](docs/PLAN.md).
 
 ## Architecture

@@ -17,6 +17,7 @@ struct AppRule {
     QString exe;           // absolute path matched by the exec watcher (stage 5), optional
     QString cmdlineMatch;  // substring of the command line, for Wine games (stage 5), optional
     bool enabled = true;
+    qint64 ownerUid = -1;  // set by the daemon from the D-Bus caller; -1 matches every user
 
     bool operator==(const AppRule &) const = default;
 };

@@ -11,6 +11,8 @@
 #include <QTemporaryDir>
 #include <QTest>
 
+#include <unistd.h>
+
 using namespace agv;
 
 namespace {
@@ -90,7 +92,7 @@ private slots:
     void namedApp()
     {
         QString id;
-        QVERIFY(m_apps->add({{QStringLiteral("name"), QStringLiteral("Game")}}, &id).isOk());
+        QVERIFY(m_apps->add({{QStringLiteral("name"), QStringLiteral("Game")}}, getuid(), &id).isOk());
 
         const Run run = agvRun({QStringLiteral("--app"), id, QStringLiteral("--"), QStringLiteral("sh"),
                                 QStringLiteral("-c"), QStringLiteral("echo $$")});
