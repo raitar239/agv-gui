@@ -157,6 +157,9 @@ cgroup v2 → nftables `socket cgroupv2` → `meta mark` → `ip rule fwmark` �
 - `setConfig` принимает только белый список ключей и значений; `tun-routing-mode` и
   `tun-device-name` принадлежат движку маршрутизации и снаружи недоступны. Свободные значения не могут
   начинаться с `-` (не примет за опцию).
+- Демон передаёт в polkit флаг вызывающего `ALLOW_INTERACTIVE_AUTHORIZATION`; без него при нужном
+  пароле отвечает `org.freedesktop.DBus.Error.InteractiveAuthorizationRequired`. GUI ставит
+  `QDBusMessage::setInteractiveAuthorizationAllowed(true)` на вызовы, где ждёт окно пароля.
 - CLI запускается с пустым окружением (только `HOME`, `PATH`, `LANG`, `TERM=dumb`, `NO_COLOR`),
   команды — строго по одной.
 
@@ -204,7 +207,10 @@ cgroup v2 → nftables `socket cgroupv2` → `meta mark` → `ip rule fwmark` �
    (SIGTERM, ждём до 10 с). ✓ `ImportLogin`: копирует `adguardvpn-cli.conf` вызывающего (в нём
    зашифрованы вход, исключения и настройки; копия в другом HOME работает), только обычный файл
    владельца, без симлинков, 0600. ✓ `scripts/dev-install.sh` — установка отладочной сборки.
-   Осталось: проверка на системной шине от root (connect/disconnect, polkit).
+   ✓ Проверено от root на системной шине (`scripts/root-smoke-test.sh`, 2026-10-25): импорт входа,
+   остановка чужого VPN, connect → disconnect → connect, интернет после каждого шага; polkit от
+   обычного пользователя: `control` без пароля, `configure` — окно пароля.
+   Замечено: CLI отвечает «connected» на ~1 с раньше, чем готов его DNS-прокси.
 3. Движок маршрутизации: SCRIPT-режим, nftables, cgroup, agv-run.
 4. GUI MVP: главная, локации, сайты-исключения, трей, адаптивная сетка.
 5. Исключения приложений: выбор из .desktop, exec watcher, переписывание .desktop. Проверить

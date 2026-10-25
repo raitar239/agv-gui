@@ -46,12 +46,14 @@ PolkitAuthorizer::PolkitAuthorizer(QDBusConnection bus, bool enabled, QObject *p
     , m_enabled(enabled)
 {
     qDBusRegisterMetaType<PolkitSubject>();
+    qDBusRegisterMetaType<QMap<QString, QString>>(); // details: a{ss}
 }
 
-void PolkitAuthorizer::check(const QString &sender, const QString &actionId, Callback callback)
+void PolkitAuthorizer::check(const QString &sender, const QString &actionId, bool allowInteraction,
+                             Callback callback)
 {
     if (!m_enabled) {
-        callback(true, {});
+        callback({true, false, {}});
         return;
     }
 
@@ -64,15 +66,17 @@ void PolkitAuthorizer::check(const QString &sender, const QString &actionId, Cal
     PolkitSubject subject{QStringLiteral("system-bus-name"),
                           {{QStringLiteral("name"), QVariant::fromValue(sender)}}};
     call << QVariant::fromValue(subject) << actionId
-         << QVariant::fromValue(QMap<QString, QString>()) << AllowUserInteraction << QString();
+         << QVariant::fromValue(QMap<QString, QString>()) << (allowInteraction ? AllowUserInteraction : 0u)
+         << QString();
 
-    auto *watcher = new QDBusPendingCallWatcher(m_bus.asyncCall(call, InteractiveTimeoutMs), this);
+    const int timeout = allowInteraction ? InteractiveTimeoutMs : -1;
+    auto *watcher = new QDBusPendingCallWatcher(m_bus.asyncCall(call, timeout), this);
     connect(watcher, &QDBusPendingCallWatcher::finished, this,
             [callback = std::move(callback)](QDBusPendingCallWatcher *watcher) {
         watcher->deleteLater();
         const QDBusMessage reply = watcher->reply();
         if (reply.type() == QDBusMessage::ErrorMessage) {
-            callback(false, reply.errorMessage());
+            callback({false, false, reply.errorMessage()});
             return;
         }
 
@@ -85,7 +89,12 @@ void PolkitAuthorizer::check(const QString &sender, const QString &actionId, Cal
         result >> authorized >> challenge >> details;
         result.endStructure();
 
-        callback(authorized, authorized ? QString() : QStringLiteral("Not authorized"));
+        if (authorized)
+            callback({true, false, {}});
+        else if (challenge)
+            callback({false, true, QStringLiteral("Authentication is required")});
+        else
+            callback({false, false, QStringLiteral("Not authorized")});
     });
 }
 

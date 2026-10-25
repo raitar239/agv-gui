@@ -248,13 +248,17 @@ void DaemonService::authorized(const QString &actionId, std::function<void(QDBus
 {
     setDelayedReply(true);
     const QDBusMessage message = this->message();
-    m_polkit->check(message.service(), actionId,
-                    [this, message, action = std::move(action)](bool ok, const QString &reason) {
-        if (!ok) {
-            replyError(message, {errors::NotAuthorized, reason});
+    m_polkit->check(message.service(), actionId, message.isInteractiveAuthorizationAllowed(),
+                    [this, message, action = std::move(action)](const PolkitAuthorizer::Result &result) {
+        if (result.authorized) {
+            action(message);
             return;
         }
-        action(message);
+        // The standard error tells clients to retry with interactive authorization allowed.
+        const QString name = result.challenge
+            ? QStringLiteral("org.freedesktop.DBus.Error.InteractiveAuthorizationRequired")
+            : errors::NotAuthorized;
+        replyError(message, {name, result.message});
     });
 }
 
