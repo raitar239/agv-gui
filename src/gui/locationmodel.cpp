@@ -1,5 +1,9 @@
 #include "locationmodel.h"
 
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QLocale>
 #include <QSettings>
 
 #include <algorithm>
@@ -10,12 +14,7 @@ namespace {
 
 const QString FavoritesKey = QStringLiteral("locations/favorites");
 
-bool matches(const AgvLocation &location, const QString &filter)
-{
-    return location.city.contains(filter, Qt::CaseInsensitive)
-        || location.country.contains(filter, Qt::CaseInsensitive)
-        || location.iso.compare(filter, Qt::CaseInsensitive) == 0;
-}
+const QLatin1String VirtualSuffix(" (Virtual)");
 
 } // namespace
 
@@ -24,6 +23,50 @@ LocationModel::LocationModel(QObject *parent)
 {
     const QStringList favorites = QSettings().value(FavoritesKey).toStringList();
     m_favorites = QSet<QString>(favorites.cbegin(), favorites.cend());
+    loadNames();
+}
+
+void LocationModel::reloadNames()
+{
+    m_countryNames.clear();
+    m_cityNames.clear();
+    m_virtualWord.clear();
+    loadNames();
+    rebuild();
+}
+
+void LocationModel::loadNames()
+{
+    // :/i18n/locations_<language>.json: { countries: {ISO: name}, cities: {CLI name: name}, virtual }
+    QFile file(QStringLiteral(":/i18n/locations_%1.json").arg(QLocale().name().section(QLatin1Char('_'), 0, 0)));
+    if (!file.open(QIODevice::ReadOnly))
+        return;
+    const QJsonObject root = QJsonDocument::fromJson(file.readAll()).object();
+    const QJsonObject countries = root.value(QStringLiteral("countries")).toObject();
+    for (auto it = countries.begin(); it != countries.end(); ++it)
+        m_countryNames.insert(it.key(), it.value().toString());
+    const QJsonObject cities = root.value(QStringLiteral("cities")).toObject();
+    for (auto it = cities.begin(); it != cities.end(); ++it)
+        m_cityNames.insert(it.key(), it.value().toString());
+    m_virtualWord = root.value(QStringLiteral("virtual")).toString();
+}
+
+QString LocationModel::countryName(const AgvLocation &location) const
+{
+    return m_countryNames.value(location.iso, location.country);
+}
+
+QString LocationModel::cityName(const AgvLocation &location) const
+{
+    // "Moscow (Virtual)" → "Москва (виртуальная)"
+    QString base = location.city;
+    const bool isVirtual = base.endsWith(VirtualSuffix);
+    if (isVirtual)
+        base.chop(VirtualSuffix.size());
+    const QString name = m_cityNames.value(base);
+    if (name.isEmpty())
+        return location.city;
+    return isVirtual && !m_virtualWord.isEmpty() ? QStringLiteral("%1 (%2)").arg(name, m_virtualWord) : name;
 }
 
 int LocationModel::rowCount(const QModelIndex &parent) const
@@ -43,6 +86,8 @@ QVariant LocationModel::data(const QModelIndex &index, int role) const
     case PingRole: return location.ping;
     case FavoriteRole: return m_favorites.contains(location.city);
     case FlagRole: return flagEmoji(location.iso);
+    case CountryNameRole: return countryName(location);
+    case CityNameRole: return cityName(location);
     }
     return {};
 }
@@ -50,7 +95,8 @@ QVariant LocationModel::data(const QModelIndex &index, int role) const
 QHash<int, QByteArray> LocationModel::roleNames() const
 {
     return {{IsoRole, "iso"},   {CountryRole, "country"},   {CityRole, "city"},
-            {PingRole, "ping"}, {FavoriteRole, "favorite"}, {FlagRole, "flag"}};
+            {PingRole, "ping"}, {FavoriteRole, "favorite"}, {FlagRole, "flag"},
+            {CountryNameRole, "countryName"}, {CityNameRole, "cityName"}};
 }
 
 void LocationModel::setFilter(const QString &filter)
@@ -88,17 +134,19 @@ QVariantList LocationModel::favorites() const
             continue;
         result.append(QVariantMap{{QStringLiteral("city"), location.city},
                                   {QStringLiteral("country"), location.country},
+                                  {QStringLiteral("cityName"), cityName(location)},
+                                  {QStringLiteral("countryName"), countryName(location)},
                                   {QStringLiteral("flag"), flagEmoji(location.iso)},
                                   {QStringLiteral("ping"), location.ping}});
     }
     std::sort(result.begin(), result.end(), [](const QVariant &a, const QVariant &b) {
         const QVariantMap left = a.toMap();
         const QVariantMap right = b.toMap();
-        const int country = left.value(QStringLiteral("country")).toString().localeAwareCompare(
-            right.value(QStringLiteral("country")).toString());
+        const int country = left.value(QStringLiteral("countryName")).toString().localeAwareCompare(
+            right.value(QStringLiteral("countryName")).toString());
         return country != 0 ? country < 0
-                            : left.value(QStringLiteral("city")).toString().localeAwareCompare(
-                                  right.value(QStringLiteral("city")).toString()) < 0;
+                            : left.value(QStringLiteral("cityName")).toString().localeAwareCompare(
+                                  right.value(QStringLiteral("cityName")).toString()) < 0;
     });
     return result;
 }
@@ -149,9 +197,18 @@ QString LocationModel::countryOf(const QString &city) const
 {
     for (const AgvLocation &location : m_all) {
         if (location.city.compare(city, Qt::CaseInsensitive) == 0)
-            return location.country;
+            return countryName(location);
     }
     return {};
+}
+
+QString LocationModel::cityName(const QString &city) const
+{
+    for (const AgvLocation &location : m_all) {
+        if (location.city.compare(city, Qt::CaseInsensitive) == 0)
+            return cityName(location);
+    }
+    return city;
 }
 
 QString LocationModel::flagEmoji(const QString &iso)
@@ -174,8 +231,15 @@ void LocationModel::rebuild()
     for (int i = 0; i < m_all.size(); ++i) {
         if (m_favoritesOnly && !m_favorites.contains(m_all.at(i).city))
             continue;
-        if (filter.isEmpty() || matches(m_all.at(i), filter))
+        const AgvLocation &location = m_all.at(i);
+        // Search finds both the original and the translated names.
+        if (filter.isEmpty() || location.city.contains(filter, Qt::CaseInsensitive)
+            || location.country.contains(filter, Qt::CaseInsensitive)
+            || cityName(location).contains(filter, Qt::CaseInsensitive)
+            || countryName(location).contains(filter, Qt::CaseInsensitive)
+            || location.iso.compare(filter, Qt::CaseInsensitive) == 0) {
             m_visible.append(i);
+        }
     }
     std::stable_sort(m_visible.begin(), m_visible.end(), [this](int a, int b) {
         const AgvLocation &left = m_all.at(a);
@@ -185,8 +249,8 @@ void LocationModel::rebuild()
         if (leftFavorite != rightFavorite)
             return leftFavorite;
         if (m_sortByName) {
-            const int country = left.country.localeAwareCompare(right.country);
-            return country != 0 ? country < 0 : left.city.localeAwareCompare(right.city) < 0;
+            const int country = countryName(left).localeAwareCompare(countryName(right));
+            return country != 0 ? country < 0 : cityName(left).localeAwareCompare(cityName(right)) < 0;
         }
         // Unknown pings (-1) go last.
         const uint leftPing = uint(left.ping);

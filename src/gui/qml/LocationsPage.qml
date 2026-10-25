@@ -90,13 +90,14 @@ Item {
 
                 width: ListView.view.width
                 flag: model.flag
-                city: model.city
-                country: model.country
+                city: model.cityName
+                country: model.countryName
                 ping: model.ping
                 favorite: model.favorite
-                current: Daemon.connected && city.toUpperCase() === Daemon.location.toUpperCase()
-                onClicked: { Daemon.connectTo(city); page.chosen() }
-                onFavoriteToggled: page.model.toggleFavorite(city)
+                // The CLI's own city name is the key for connecting and favorites.
+                current: Daemon.connected && model.city.toUpperCase() === Daemon.location.toUpperCase()
+                onClicked: { Daemon.connectTo(model.city); page.chosen() }
+                onFavoriteToggled: page.model.toggleFavorite(model.city)
             }
 
             Text {

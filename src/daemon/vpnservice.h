@@ -47,8 +47,12 @@ public:
     // For tests: where to look for processes (default /proc).
     void setProcDir(const QString &procDir) { m_procDir = procDir; }
 
-    // Reads the initial state and starts polling.
+    // Reads the initial state, starts polling, and connects if auto-connect is on.
     void start();
+
+    // Connect to the last used location when the daemon starts, retrying while the network comes up.
+    bool autoConnect() const { return m_autoConnect; }
+    void setAutoConnect(bool on);
     void refreshStatus(Done done = {});
 
     void connectTo(const QString &location, Done done);
@@ -96,6 +100,7 @@ private:
     void updateExternalVpns();
     void refreshSiteExclusionMode();
     void schedulePoll();
+    void tryAutoConnect();
     Error errorFor(const QStringList &args, int exitCode, const QString &output, bool timedOut,
                    bool failedToStart) const;
     void runChecked(const QStringList &args, std::function<void(const QString &, const Error &)> then,
@@ -103,6 +108,9 @@ private:
 
     CliRunner *m_cli;
     QTimer *m_poll;
+    QTimer *m_autoConnectRetry;
+    bool m_autoConnect = false;
+    int m_autoConnectAttempts = 0;
     QPointer<QProcess> m_login;
     bool m_transitioning = false;
 

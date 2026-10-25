@@ -9,6 +9,8 @@ add_library(agvd-core STATIC
     clirunner.h
     clirunner.cpp
     daemonerror.h
+    daemonsettings.h
+    daemonsettings.cpp
     execwatcher.h
     execwatcher.cpp
     vpnservice.h
@@ -21,6 +23,8 @@ add_library(agvd-core STATIC
     routingengine.cpp
     runsocketserver.h
     runsocketserver.cpp
+    systemdunit.h
+    systemdunit.cpp
     daemonservice.h
     daemonservice.cpp
 )

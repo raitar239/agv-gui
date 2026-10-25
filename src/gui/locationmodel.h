@@ -22,7 +22,10 @@ class LocationModel : public QAbstractListModel
     Q_PROPERTY(QVariantList favorites READ favorites NOTIFY countChanged)
 
 public:
-    enum Role { IsoRole = Qt::UserRole + 1, CountryRole, CityRole, PingRole, FavoriteRole, FlagRole };
+    // city is the CLI's own (English) name and the key for connecting and favorites;
+    // countryName and cityName are for display, translated where a dictionary exists.
+    enum Role { IsoRole = Qt::UserRole + 1, CountryRole, CityRole, PingRole, FavoriteRole, FlagRole,
+                CountryNameRole, CityNameRole };
 
     explicit LocationModel(QObject *parent = nullptr);
 
@@ -43,11 +46,16 @@ public:
 
     void setLocations(const AgvLocationList &locations);
 
+    // Reloads translated country and city names after the language changed.
+    void reloadNames();
+
     Q_INVOKABLE void toggleFavorite(const QString &city);
     // Ping of a city, -1 when unknown; used to show the current location's ping.
     Q_INVOKABLE int pingOf(const QString &city) const;
     Q_INVOKABLE QString flagOf(const QString &cityOrIso) const;
+    // Display names for a CLI city (any case): its country and the city itself.
     Q_INVOKABLE QString countryOf(const QString &city) const;
+    Q_INVOKABLE QString cityName(const QString &city) const;
 
     // Regional-indicator emoji for an ISO 3166 code ("FR" → 🇫🇷).
     static QString flagEmoji(const QString &iso);
@@ -61,11 +69,17 @@ signals:
 
 private:
     void rebuild();
+    void loadNames();
+    QString countryName(const AgvLocation &location) const;
+    QString cityName(const AgvLocation &location) const;
     void saveFavorites() const;
 
     AgvLocationList m_all;
     QList<int> m_visible;  // indexes into m_all
     QSet<QString> m_favorites;
+    QHash<QString, QString> m_countryNames;  // ISO code → name
+    QHash<QString, QString> m_cityNames;     // CLI city → name
+    QString m_virtualWord;
     QString m_filter;
     bool m_sortByName = false;
     bool m_loading = false;

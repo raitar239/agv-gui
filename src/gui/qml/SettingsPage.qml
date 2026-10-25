@@ -7,6 +7,8 @@ import Agv.Backend
 Item {
     id: page
 
+    signal copied()
+
     Flickable {
         anchors.fill: parent
         contentHeight: column.implicitHeight + 2 * Theme.spacing
@@ -123,22 +125,163 @@ Item {
             // Appearance
             Card {
                 Layout.fillWidth: true
-                RowLayout {
+                ColumnLayout {
                     width: parent.width
                     spacing: 12
-                    AppIcon { name: "palette"; color: Theme.textSecondary }
+                    RowLayout {
+                        spacing: 12
+                        Layout.fillWidth: true
+                        AppIcon { name: "palette"; color: Theme.textSecondary }
+                        Text {
+                            text: qsTr("Theme")
+                            color: Theme.text
+                            font.pixelSize: Theme.fontBody
+                            Layout.fillWidth: true
+                        }
+                        Segmented {
+                            options: [{ value: "system", label: qsTr("System") },
+                                      { value: "light", label: qsTr("Light") },
+                                      { value: "dark", label: qsTr("Dark") }]
+                            value: SystemTheme.preference
+                            onActivated: (value) => SystemTheme.preference = value
+                        }
+                    }
+                    RowLayout {
+                        spacing: 12
+                        Layout.fillWidth: true
+                        AppIcon { name: "globe"; color: Theme.textSecondary }
+                        Text {
+                            text: qsTr("Language")
+                            color: Theme.text
+                            font.pixelSize: Theme.fontBody
+                            Layout.fillWidth: true
+                        }
+                        Dropdown {
+                            options: Language.options
+                            value: Language.preference
+                            onActivatedValue: (value) => Language.preference = value
+                        }
+                    }
+                }
+            }
+
+            // Startup
+            Card {
+                Layout.fillWidth: true
+                ColumnLayout {
+                    width: parent.width
+                    spacing: 14
+
+                    component SettingRow: RowLayout {
+                        property alias title: titleText.text
+                        property alias hint: hintText.text
+                        property alias checked: toggle.checked
+                        property bool available: true
+                        signal toggled(bool checked)
+                        spacing: 12
+                        Layout.fillWidth: true
+                        opacity: available ? 1 : 0.5
+                        ColumnLayout {
+                            spacing: 2
+                            Layout.fillWidth: true
+                            Text {
+                                id: titleText
+                                color: Theme.text
+                                font.pixelSize: Theme.fontBody
+                                wrapMode: Text.Wrap
+                                Layout.fillWidth: true
+                            }
+                            Text {
+                                id: hintText
+                                visible: text !== ""
+                                color: Theme.textSecondary
+                                font.pixelSize: Theme.fontSmall
+                                wrapMode: Text.Wrap
+                                Layout.fillWidth: true
+                            }
+                        }
+                        Toggle {
+                            id: toggle
+                            enabled: parent.available
+                            onToggled: (checked) => parent.toggled(checked)
+                        }
+                    }
+
                     Text {
-                        text: qsTr("Theme")
+                        text: qsTr("Startup")
                         color: Theme.text
                         font.pixelSize: Theme.fontBody
-                        Layout.fillWidth: true
+                        font.weight: Font.DemiBold
                     }
-                    Segmented {
-                        options: [{ value: "system", label: qsTr("System") },
-                                  { value: "light", label: qsTr("Light") },
-                                  { value: "dark", label: qsTr("Dark") }]
-                        value: SystemTheme.preference
-                        onActivated: (value) => SystemTheme.preference = value
+                    SettingRow {
+                        title: qsTr("Open AGV in the tray when I log in")
+                        checked: Autostart.enabled
+                        onToggled: (checked) => Autostart.enabled = checked
+                    }
+                    // Hyprland does not run XDG autostart entries by itself: offer the config line.
+                    ColumnLayout {
+                        visible: Autostart.compositorLine !== ""
+                        spacing: 6
+                        Layout.fillWidth: true
+                        Layout.topMargin: -6
+                        Text {
+                            text: qsTr("Hyprland: add this line to hyprland.conf. Click to copy.")
+                            color: Theme.textSecondary
+                            font.pixelSize: Theme.fontSmall
+                            wrapMode: Text.Wrap
+                            Layout.fillWidth: true
+                        }
+                        Rectangle {
+                            implicitHeight: 34
+                            radius: Theme.radiusSmall
+                            color: copyMouse.containsMouse ? Theme.surfaceHover : (Theme.dark ? "#151515" : "#f3f3f3")
+                            border.width: 1
+                            border.color: copyMouse.containsMouse ? Theme.accentSoftBorder : Theme.border
+                            Layout.fillWidth: true
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 12
+                                anchors.rightMargin: 10
+                                Text {
+                                    text: Autostart.compositorLine
+                                    color: Theme.text
+                                    font.family: "monospace"
+                                    font.pixelSize: Theme.fontSmall + 1
+                                    elide: Text.ElideMiddle
+                                    Layout.fillWidth: true
+                                }
+                                Text {
+                                    text: qsTr("Copy")
+                                    color: Theme.accent
+                                    font.pixelSize: Theme.fontSmall
+                                    font.weight: Font.DemiBold
+                                }
+                            }
+                            MouseArea {
+                                id: copyMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    Autostart.copyToClipboard(Autostart.compositorLine)
+                                    page.copied()
+                                }
+                            }
+                        }
+                    }
+                    SettingRow {
+                        title: qsTr("Start the VPN service at boot")
+                        hint: qsTr("Needs an administrator password.")
+                        checked: Daemon.startAtBoot
+                        available: Daemon.available
+                        onToggled: (checked) => Daemon.setStartAtBoot(checked)
+                    }
+                    SettingRow {
+                        title: qsTr("Connect automatically")
+                        hint: qsTr("When the service starts, connect to the last location and keep trying until the network is up.")
+                        checked: Daemon.autoConnect
+                        available: Daemon.available && Daemon.loggedIn
+                        onToggled: (checked) => Daemon.setAutoConnect(checked)
                     }
                 }
             }

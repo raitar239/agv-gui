@@ -21,6 +21,7 @@ public:
     ~TrayIcon() override;
 
     static bool isAvailable();
+    void retranslate();
 
 signals:
     void showWindowRequested();
@@ -34,6 +35,8 @@ private:
     QMenu *m_menu;
     QAction *m_status;
     QAction *m_toggle;
+    QAction *m_open;
+    QAction *m_quit;
 };
 
 } // namespace agv

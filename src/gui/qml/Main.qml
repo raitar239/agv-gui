@@ -96,7 +96,9 @@ ApplicationWindow {
                     onChosen: if (window.layoutMode !== "expanded") window.currentPage = 0
                 }
                 ExclusionsPage {}
-                SettingsPage {}
+                SettingsPage {
+                    onCopied: toast.show(qsTr("Copied to the clipboard"), false)
+                }
             }
         }
 

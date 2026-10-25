@@ -3,11 +3,13 @@
 #include "clirunner.h"
 #include "daemon1adaptor.h"
 #include "daemonservice.h"
+#include "daemonsettings.h"
 #include "execwatcher.h"
 #include "dbustypes.h"
 #include "polkitauthorizer.h"
 #include "routingengine.h"
 #include "runsocketserver.h"
+#include "systemdunit.h"
 #include "vpnservice.h"
 
 #include <QCommandLineParser>
@@ -134,6 +136,13 @@ int main(int argc, char *argv[])
     AppExclusionService apps(&appStore, &routing);
     PolkitAuthorizer polkit(bus, !session);
     DaemonService service(&vpn, &apps, &polkit, bus);
+
+    DaemonSettings settings(dataDir + QStringLiteral("/settings.json"));
+    settings.load();
+    vpn.setAutoConnect(settings.autoConnect());
+    // systemd lives on the system bus even when agvd itself runs on the session bus for development.
+    SystemdUnit unit(QDBusConnection::systemBus(), QStringLiteral("agvd.service"));
+    service.setStartup(&settings, session ? nullptr : &unit);
     new Daemon1Adaptor(&service);
 
     if (!bus.registerObject(DBusPath, &service)) {

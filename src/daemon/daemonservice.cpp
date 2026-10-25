@@ -1,6 +1,8 @@
 #include "daemonservice.h"
 
 #include "appexclusionservice.h"
+#include "daemonsettings.h"
+#include "systemdunit.h"
 #include "polkitauthorizer.h"
 #include "vpnservice.h"
 
@@ -53,6 +55,50 @@ bool DaemonService::loggedIn() const { return m_vpn->loggedIn(); }
 QString DaemonService::siteExclusionMode() const { return m_vpn->siteExclusionMode(); }
 bool DaemonService::appExclusionsSupported() const { return m_apps->isSupported(); }
 QString DaemonService::appExclusionMode() const { return m_apps->mode(); }
+bool DaemonService::startAtBoot() const { return m_unit && m_unit->isEnabled(); }
+bool DaemonService::autoConnect() const { return m_settings && m_settings->autoConnect(); }
+
+void DaemonService::setStartup(DaemonSettings *settings, SystemdUnit *unit)
+{
+    m_settings = settings;
+    m_unit = unit;
+    if (m_unit) {
+        connect(m_unit, &SystemdUnit::enabledChanged, this,
+                [this] { emitPropertiesChanged({QStringLiteral("StartAtBoot")}); });
+        m_unit->refresh();
+    }
+}
+
+void DaemonService::SetStartAtBoot(bool enabled)
+{
+    authorized(ActionConfigure, [this, enabled](const QDBusMessage &message) {
+        if (!m_unit) {
+            replyError(message, {errors::NotSupported, QStringLiteral("Not running as a system service")});
+            return;
+        }
+        m_unit->setEnabled(enabled, [this, message](const QString &error) {
+            replyDone(message, error.isEmpty() ? Error{} : Error{errors::SystemFailed, error});
+        });
+    });
+}
+
+void DaemonService::SetAutoConnect(bool enabled)
+{
+    authorized(ActionConfigure, [this, enabled](const QDBusMessage &message) {
+        if (!m_settings) {
+            replyError(message, {errors::NotSupported, QStringLiteral("Settings are not available")});
+            return;
+        }
+        m_settings->setAutoConnect(enabled);
+        if (!m_settings->save()) {
+            replyError(message, {errors::SystemFailed, QStringLiteral("Cannot save settings")});
+            return;
+        }
+        m_vpn->setAutoConnect(enabled);
+        emitPropertiesChanged({QStringLiteral("AutoConnect")});
+        replyDone(message, {});
+    });
+}
 
 AgvExternalVpnList DaemonService::externalVpns() const
 {

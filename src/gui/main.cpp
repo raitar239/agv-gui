@@ -1,5 +1,8 @@
+#include "autostart.h"
 #include "daemonclient.h"
 #include "installedapps.h"
+#include "language.h"
+#include "locationmodel.h"
 #include "systemtheme.h"
 #include "trayicon.h"
 #include "windowcontroller.h"
@@ -67,6 +70,9 @@ int main(int argc, char *argv[])
     if (!screenshot && !instance.claim())
         return 0;
 
+    // UI language: the system's, or the one picked in Settings. Before anything shows text.
+    Language language;
+
     QQuickStyle::setStyle(QStringLiteral("Basic"));
     pickIconTheme();
     QIcon::setFallbackThemeName(QStringLiteral("hicolor"));
@@ -75,8 +81,11 @@ int main(int argc, char *argv[])
     const bool sessionBus = qEnvironmentVariableIntValue("AGV_SESSION_BUS") == 1;
     DaemonClient daemon(sessionBus ? QDBusConnection::sessionBus() : QDBusConnection::systemBus());
     SystemTheme theme;
+    Autostart autostart;
     qmlRegisterSingletonInstance("Agv.Backend", 1, 0, "Daemon", &daemon);
     qmlRegisterSingletonInstance("Agv.Backend", 1, 0, "SystemTheme", &theme);
+    qmlRegisterSingletonInstance("Agv.Backend", 1, 0, "Autostart", &autostart);
+    qmlRegisterSingletonInstance("Agv.Backend", 1, 0, "Language", &language);
     qmlRegisterType<InstalledApps>("Agv.Backend", 1, 0, "InstalledApps");
 
     const bool tray = !screenshot && TrayIcon::isAvailable();
@@ -90,6 +99,12 @@ int main(int argc, char *argv[])
         QObject::connect(trayIcon, &TrayIcon::quitRequested, &app, &QCoreApplication::quit);
     }
     QObject::connect(&instance, &SingleInstance::showRequested, &window, &WindowController::show);
+    QObject::connect(&language, &Language::changed, &app, [&] {
+        daemon.locationModel()->reloadNames();
+        window.retranslate();
+        if (trayIcon)
+            trayIcon->retranslate();
+    });
 
     if (screenshot) {
         const QStringList size = parser.value(sizeOption).split(QLatin1Char('x'));

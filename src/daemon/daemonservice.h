@@ -13,6 +13,8 @@ namespace agv {
 
 class PolkitAuthorizer;
 class AppExclusionService;
+class DaemonSettings;
+class SystemdUnit;
 class VpnService;
 struct Error;
 
@@ -31,6 +33,8 @@ class DaemonService : public QObject, protected QDBusContext
     Q_PROPERTY(bool AppExclusionsSupported READ appExclusionsSupported)
     Q_PROPERTY(AgvExternalVpnList ExternalVpns READ externalVpns)
     Q_PROPERTY(QString AppExclusionMode READ appExclusionMode)
+    Q_PROPERTY(bool StartAtBoot READ startAtBoot)
+    Q_PROPERTY(bool AutoConnect READ autoConnect)
 
 public:
     DaemonService(VpnService *vpn, AppExclusionService *apps, PolkitAuthorizer *polkit,
@@ -46,6 +50,11 @@ public:
     bool appExclusionsSupported() const;
     AgvExternalVpnList externalVpns() const;
     QString appExclusionMode() const;
+    bool startAtBoot() const;
+    bool autoConnect() const;
+
+    // Optional: without them the startup properties read false and setting them fails.
+    void setStartup(DaemonSettings *settings, SystemdUnit *unit);
 
 public slots:
     void Connect(const QString &location);
@@ -71,6 +80,8 @@ public slots:
     void RemoveAppExclusion(const QString &id);
     AgvAppTrafficList GetAppTraffic();
     void SetAppExclusionMode(const QString &mode);
+    void SetStartAtBoot(bool enabled);
+    void SetAutoConnect(bool enabled);
 
     AgvConfigMap GetConfig();
     void SetConfig(const QString &key, const QString &value);
@@ -91,6 +102,8 @@ private:
 
     VpnService *m_vpn;
     AppExclusionService *m_apps;
+    DaemonSettings *m_settings = nullptr;
+    SystemdUnit *m_unit = nullptr;
     PolkitAuthorizer *m_polkit;
     QDBusConnection m_bus;
     QVariantMap m_lastProperties;

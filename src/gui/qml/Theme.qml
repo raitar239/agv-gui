@@ -51,7 +51,7 @@ QtObject {
     readonly property int animNormal: 200
 
     function formatBytes(bytes) {
-        const units = ["B", "KB", "MB", "GB", "TB"]
+        const units = [qsTr("B"), qsTr("KB"), qsTr("MB"), qsTr("GB"), qsTr("TB")]
         let value = bytes
         let unit = 0
         while (value >= 1024 && unit < units.length - 1) {

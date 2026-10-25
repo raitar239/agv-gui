@@ -9,7 +9,7 @@
     reads                                  - anyone allowed by the D-Bus policy
     org.agv.daemon.control                 - connect, disconnect, site and app exclusions, license
     org.agv.daemon.configure               - settings, login, logout, import, stopping external VPNs,
-                                             app exclusion mode
+                                             app exclusion mode, startup settings
 
   Failed calls return org.agv.Error.* errors (NotLoggedIn, CliFailed, CliNotFound, Timeout,
   UnexpectedOutput, InvalidArgument, Busy, NotAuthorized, NotFound, NotSupported, SystemFailed).
@@ -143,6 +143,19 @@
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="AgvAppTrafficList"/>
     </method>
     <signal name="AppExclusionsChanged"/>
+
+    <!-- Startup (org.agv.daemon.configure) -->
+
+    <!-- agvd.service starts at boot -->
+    <property name="StartAtBoot" type="b" access="read"/>
+    <method name="SetStartAtBoot">
+      <arg name="enabled" type="b" direction="in"/>
+    </method>
+    <!-- When agvd starts, connect to the last used location, retrying while the network comes up -->
+    <property name="AutoConnect" type="b" access="read"/>
+    <method name="SetAutoConnect">
+      <arg name="enabled" type="b" direction="in"/>
+    </method>
 
     <!-- Configuration (adguardvpn-cli config show / set-*) -->
 

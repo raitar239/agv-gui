@@ -135,6 +135,40 @@ private slots:
         QTRY_COMPARE(vpn.siteExclusionMode(), QStringLiteral("general"));
     }
 
+    void autoConnect_data()
+    {
+        QTest::addColumn<bool>("enabled");
+        QTest::addColumn<QString>("statusFixture");
+        QTest::addColumn<int>("statusCode");
+        QTest::addColumn<bool>("connects");
+        QTest::newRow("off") << false << "status-disconnected.txt" << 0 << false;
+        QTest::newRow("on, disconnected") << true << "status-disconnected.txt" << 0 << true;
+        QTest::newRow("on, already connected") << true << "status-connected.txt" << 0 << false;
+        QTest::newRow("on, not logged in") << true << "status-not-logged-in.txt" << 11 << false;
+    }
+
+    void autoConnect()
+    {
+        QFETCH(bool, enabled);
+        QFETCH(QString, statusFixture);
+        QFETCH(int, statusCode);
+        QFETCH(bool, connects);
+
+        Scenario scenario;
+        scenario.respond(QStringLiteral("status"), fixture(statusFixture), statusCode);
+        scenario.respond(QStringLiteral("site-exclusions_mode"), fixture(QStringLiteral("site-exclusions-mode.txt")));
+        scenario.respond(QStringLiteral("connect_-y_--no-progress"), QStringLiteral("Connected\n"));
+        CliRunner cli(FakeCli, scenario.home());
+        VpnService vpn(&cli);
+        vpn.setProcDir(scenario.home()); // no foreign VPN processes in there
+        vpn.setAutoConnect(enabled);
+
+        vpn.start();
+        QTRY_VERIFY(scenario.calls().contains(QStringLiteral("site-exclusions|mode")));
+        QTest::qWait(300);
+        QCOMPARE(scenario.calls().contains(QStringLiteral("connect|-y|--no-progress")), connects);
+    }
+
     void notLoggedIn()
     {
         Scenario scenario;

@@ -17,8 +17,9 @@ Item {
     readonly property string currentCity: prettyCity(Daemon.location)
     // Reading total makes these re-run once the location list arrives.
     readonly property string currentCountry: Daemon.locations.total >= 0 ? Daemon.locations.countryOf(currentCity) : ""
+    readonly property string currentCityName: Daemon.locations.total >= 0 ? Daemon.locations.cityName(currentCity) : currentCity
     // "Country, City", or just the city until the list is known.
-    readonly property string currentPlace: currentCountry !== "" ? currentCountry + ", " + currentCity : currentCity
+    readonly property string currentPlace: currentCountry !== "" ? currentCountry + ", " + currentCityName : currentCityName
 
     function prettyCity(name) {
         // The CLI reports "ATHENS"; show "Athens".
@@ -93,8 +94,7 @@ Item {
                         if (Daemon.state === "error" && Daemon.lastError !== "")
                             return Daemon.lastError
                         if (Daemon.connected && page.vpnOnly)
-                            return page.vpnApps === 1 ? qsTr("Only 1 app uses %1").arg(page.currentPlace)
-                                                      : qsTr("Only %1 apps use %2").arg(page.vpnApps).arg(page.currentPlace)
+                            return qsTr("Only %n app(s) use %1", "", page.vpnApps).arg(page.currentPlace)
                         if (Daemon.connected)
                             return qsTr("Your traffic goes through %1").arg(page.currentPlace)
                         return Daemon.loggedIn ? qsTr("Press the button to connect") : ""
@@ -152,7 +152,7 @@ Item {
                         spacing: 1
                         Layout.fillWidth: true
                         Text {
-                            text: Daemon.connected ? (page.currentCountry || page.currentCity) : qsTr("Choose a location")
+                            text: Daemon.connected ? (page.currentCountry || page.currentCityName) : qsTr("Choose a location")
                             color: Theme.text
                             font.pixelSize: Theme.fontBody
                             font.weight: Font.DemiBold
@@ -163,11 +163,11 @@ Item {
                             readonly property int ping: Daemon.locations.total >= 0 ? Daemon.locations.pingOf(page.currentCity) : -1
                             text: {
                                 if (Daemon.connected) {
-                                    const city = page.currentCountry !== "" ? page.currentCity : ""
+                                    const city = page.currentCountry !== "" ? page.currentCityName : ""
                                     const details = ping >= 0 ? qsTr("Ping %1 ms").arg(ping) : qsTr("Connected")
                                     return city !== "" ? city + " · " + details : details
                                 }
-                                return Daemon.locations.total > 0 ? qsTr("%1 locations").arg(Daemon.locations.total)
+                                return Daemon.locations.total > 0 ? qsTr("%n location(s)", "", Daemon.locations.total)
                                                                   : qsTr("Pick a server")
                             }
                             color: Theme.textSecondary
@@ -224,7 +224,7 @@ Item {
                                 anchors.verticalCenter: parent.verticalCenter
                             }
                             Text {
-                                text: chip.modelData.country + ", " + chip.modelData.city
+                                text: chip.modelData.countryName + ", " + chip.modelData.cityName
                                 color: chip.current ? Theme.accent : Theme.text
                                 font.pixelSize: Theme.fontSmall + 1
                                 font.weight: chip.current ? Font.DemiBold : Font.Normal

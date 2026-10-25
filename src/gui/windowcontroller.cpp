@@ -40,6 +40,12 @@ void WindowController::show()
     window->requestActivate();
 }
 
+void WindowController::retranslate()
+{
+    if (m_engine)
+        m_engine->retranslate();
+}
+
 void WindowController::screenshot(const QString &path, const QSize &size, int page, int delayMs)
 {
     QQuickWindow *window = create();

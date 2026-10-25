@@ -40,6 +40,8 @@ class DaemonClient : public QObject
     Q_PROPERTY(bool appExclusionsSupported READ appExclusionsSupported NOTIFY statusChanged)
     // "bypass" or "vpn-only"
     Q_PROPERTY(QString appExclusionMode READ appExclusionMode NOTIFY statusChanged)
+    Q_PROPERTY(bool startAtBoot READ startAtBoot NOTIFY statusChanged)
+    Q_PROPERTY(bool autoConnect READ autoConnect NOTIFY statusChanged)
     // Bytes through the tunnel since it came up; refreshed by refreshTunnelTraffic().
     Q_PROPERTY(double tunnelBytesIn READ tunnelBytesIn NOTIFY tunnelTrafficChanged)
     Q_PROPERTY(double tunnelBytesOut READ tunnelBytesOut NOTIFY tunnelTrafficChanged)
@@ -75,6 +77,8 @@ public:
         const QString mode = m_props.value(QStringLiteral("AppExclusionMode")).toString();
         return mode.isEmpty() ? QStringLiteral("bypass") : mode;
     }
+    bool startAtBoot() const { return m_props.value(QStringLiteral("StartAtBoot")).toBool(); }
+    bool autoConnect() const { return m_props.value(QStringLiteral("AutoConnect")).toBool(); }
     double tunnelBytesIn() const { return m_tunnelIn; }
     double tunnelBytesOut() const { return m_tunnelOut; }
     QVariantMap license() const { return m_license; }
@@ -110,6 +114,8 @@ public:
     Q_INVOKABLE bool isAppExcluded(const QString &desktopFile, const QString &exe) const;
 
     Q_INVOKABLE void setAppExclusionMode(const QString &mode);
+    Q_INVOKABLE void setStartAtBoot(bool enabled);
+    Q_INVOKABLE void setAutoConnect(bool enabled);
     // Reads the tunnel interface counters from sysfs (cheap; called by the UI while visible).
     Q_INVOKABLE void refreshTunnelTraffic();
 

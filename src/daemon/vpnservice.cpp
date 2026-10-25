@@ -21,6 +21,8 @@ constexpr int DisconnectTimeoutMs = 30'000;
 constexpr int LocationsTimeoutMs = 30'000;
 constexpr int LoginTimeoutMs = 30 * 60'000; // the device-code link lives ~30 minutes
 constexpr int ExternalStopPollMs = 250;
+constexpr int AutoConnectRetryMs = 30'000;
+constexpr int AutoConnectMaxAttempts = 20;   // ~10 minutes of waiting for the network
 constexpr int ExternalStopTimeoutMs = 10'000;
 
 QString lastMeaningfulLine(const QString &output)
@@ -60,7 +62,10 @@ VpnService::VpnService(CliRunner *cli, QObject *parent)
     : QObject(parent)
     , m_cli(cli)
     , m_poll(new QTimer(this))
+    , m_autoConnectRetry(new QTimer(this))
 {
+    m_autoConnectRetry->setSingleShot(true);
+    connect(m_autoConnectRetry, &QTimer::timeout, this, &VpnService::tryAutoConnect);
     m_poll->setSingleShot(true);
     connect(m_poll, &QTimer::timeout, this, [this] {
         if (m_transitioning)
@@ -86,7 +91,37 @@ QString VpnService::stateName() const
 
 void VpnService::start()
 {
-    refreshStatus([this](const Error &) { refreshSiteExclusionMode(); });
+    refreshStatus([this](const Error &) {
+        refreshSiteExclusionMode();
+        tryAutoConnect();
+    });
+}
+
+void VpnService::setAutoConnect(bool on)
+{
+    m_autoConnect = on;
+    if (!on)
+        m_autoConnectRetry->stop();
+}
+
+void VpnService::tryAutoConnect()
+{
+    // Only from a plain disconnected state: never fight a user's choice or another VPN instance.
+    const bool idle = m_state == State::Disconnected || m_state == State::Error; // Error: last try failed
+    if (!m_autoConnect || m_transitioning || !idle || !m_externalVpns.isEmpty())
+        return;
+    if (++m_autoConnectAttempts > AutoConnectMaxAttempts)
+        return;
+
+    connectTo(QString(), [this](const Error &error) {
+        if (error.isOk()) {
+            m_autoConnectAttempts = 0;
+            return;
+        }
+        // Usually the network is not up yet right after boot.
+        if (error.name != errors::NotLoggedIn)
+            m_autoConnectRetry->start(AutoConnectRetryMs);
+    });
 }
 
 void VpnService::refreshStatus(Done done)
@@ -253,6 +288,8 @@ void VpnService::connectWith(const QStringList &args, Done done)
 
 void VpnService::disconnectVpn(Done done)
 {
+    // An explicit disconnect ends any pending automatic attempts.
+    m_autoConnectRetry->stop();
     if (m_transitioning) {
         done({errors::Busy, QStringLiteral("Another connection change is in progress")});
         return;

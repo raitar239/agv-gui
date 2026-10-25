@@ -20,6 +20,8 @@ public:
     ~WindowController() override;
 
     void show();
+    // Re-evaluates every qsTr() in the open window after the language changed.
+    void retranslate();
     // Development aid: render the window at a size and page, save a PNG, then quit.
     void screenshot(const QString &path, const QSize &size, int page, int delayMs);
 

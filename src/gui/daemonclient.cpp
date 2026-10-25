@@ -197,7 +197,9 @@ void DaemonClient::addApp(const QVariantMap &fields)
             rule.insert(key, fields.value(key).toString());
     }
     call(QStringLiteral("AddAppExclusion"), {rule}, [this, name = rule.value(QStringLiteral("name")).toString()](const QDBusMessage &) {
-        emit info(tr("%1 now bypasses the VPN. Restart it if it was already running.").arg(name));
+        emit info(appExclusionMode() == QLatin1String("vpn-only")
+                      ? tr("%1 now uses the VPN. Restart it if it was already running.").arg(name)
+                      : tr("%1 now bypasses the VPN. Restart it if it was already running.").arg(name));
         refreshApps();
     });
 }
@@ -227,6 +229,16 @@ bool DaemonClient::isAppExcluded(const QString &desktopFile, const QString &exe)
 void DaemonClient::setAppExclusionMode(const QString &mode)
 {
     call(QStringLiteral("SetAppExclusionMode"), {mode});
+}
+
+void DaemonClient::setStartAtBoot(bool enabled)
+{
+    call(QStringLiteral("SetStartAtBoot"), {enabled});
+}
+
+void DaemonClient::setAutoConnect(bool enabled)
+{
+    call(QStringLiteral("SetAutoConnect"), {enabled});
 }
 
 void DaemonClient::refreshTunnelTraffic()

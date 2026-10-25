@@ -1,11 +1,15 @@
 qt_add_executable(agv-gui
     main.cpp
+    autostart.h
+    autostart.cpp
     daemonclient.h
     daemonclient.cpp
     iconprovider.h
     iconprovider.cpp
     installedapps.h
     installedapps.cpp
+    language.h
+    language.cpp
     keyedlistmodel.h
     keyedlistmodel.cpp
     locationmodel.h
@@ -43,6 +47,7 @@ qt_add_qml_module(agv-gui
         qml/Segmented.qml
         qml/Toast.qml
         qml/Toggle.qml
+        qml/Dropdown.qml
         qml/AppPicker.qml
         qml/HomePage.qml
         qml/LocationsPage.qml
@@ -62,3 +67,18 @@ target_compile_definitions(agv-gui PRIVATE AGV_VERSION="${PROJECT_VERSION}")
 target_compile_options(agv-gui PRIVATE -Wall -Wextra)
 
 install(TARGETS agv-gui DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+# Localized location names (countries and cities as the CLI reports them).
+qt_add_resources(agv-gui "location_names"
+    PREFIX /i18n
+    BASE i18n
+    FILES i18n/locations_ru.json
+)
+
+# Translations: "cmake --build build --target update_translations" refreshes the .ts files from the
+# sources; the compiled .qm files are embedded under :/i18n.
+qt_add_translations(agv-gui
+    TS_FILES i18n/agv-gui_ru.ts
+    RESOURCE_PREFIX /i18n
+    LUPDATE_OPTIONS -no-obsolete
+)

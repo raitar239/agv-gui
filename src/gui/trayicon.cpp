@@ -1,6 +1,7 @@
 #include "trayicon.h"
 
 #include "daemonclient.h"
+#include "locationmodel.h"
 
 #include <QAction>
 #include <QIcon>
@@ -71,8 +72,8 @@ TrayIcon::TrayIcon(DaemonClient *daemon, QObject *parent)
     m_status->setEnabled(false);
     m_toggle = m_menu->addAction(QString(), m_daemon, &DaemonClient::toggle);
     m_menu->addSeparator();
-    m_menu->addAction(tr("Open AGV"), this, &TrayIcon::showWindowRequested);
-    m_menu->addAction(tr("Quit"), this, &TrayIcon::quitRequested);
+    m_open = m_menu->addAction(QString(), this, &TrayIcon::showWindowRequested);
+    m_quit = m_menu->addAction(QString(), this, &TrayIcon::quitRequested);
     m_tray->setContextMenu(m_menu);
 
     connect(m_tray, &QSystemTrayIcon::activated, this, [this](QSystemTrayIcon::ActivationReason reason) {
@@ -85,8 +86,15 @@ TrayIcon::TrayIcon(DaemonClient *daemon, QObject *parent)
     connect(m_daemon, &DaemonClient::availableChanged, this, &TrayIcon::update);
     connect(m_daemon, &DaemonClient::busyChanged, this, &TrayIcon::update);
 
-    update();
+    retranslate();
     m_tray->show();
+}
+
+void TrayIcon::retranslate()
+{
+    m_open->setText(tr("Open AGV"));
+    m_quit->setText(tr("Quit"));
+    update();
 }
 
 TrayIcon::~TrayIcon()
@@ -111,7 +119,11 @@ void TrayIcon::update()
         status = m_daemon->state() == QLatin1String("disconnecting") ? tr("Disconnecting…") : tr("Connecting…");
         color = Orange;
     } else if (m_daemon->connected()) {
-        status = tr("Connected: %1").arg(m_daemon->location());
+        // "ATHENS" from the CLI → "Greece, Athens" (translated where names are known).
+        const LocationModel *locations = m_daemon->locationModel();
+        const QString city = locations->cityName(m_daemon->location());
+        const QString country = locations->countryOf(m_daemon->location());
+        status = tr("Connected: %1").arg(country.isEmpty() ? city : country + QStringLiteral(", ") + city);
         color = Green;
         filled = true;
     } else if (!m_daemon->loggedIn()) {
