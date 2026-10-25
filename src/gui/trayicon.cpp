@@ -71,7 +71,7 @@ TrayIcon::TrayIcon(DaemonClient *daemon, QObject *parent)
     m_status->setEnabled(false);
     m_toggle = m_menu->addAction(QString(), m_daemon, &DaemonClient::toggle);
     m_menu->addSeparator();
-    m_menu->addAction(tr("Open AdGuard VPN"), this, &TrayIcon::showWindowRequested);
+    m_menu->addAction(tr("Open AGV"), this, &TrayIcon::showWindowRequested);
     m_menu->addAction(tr("Quit"), this, &TrayIcon::quitRequested);
     m_tray->setContextMenu(m_menu);
 
@@ -125,7 +125,7 @@ void TrayIcon::update()
     m_toggle->setEnabled(m_daemon->available() && m_daemon->loggedIn() && !m_daemon->busy()
                          && !m_daemon->transitioning());
     m_tray->setIcon(shieldIcon(color, filled));
-    m_tray->setToolTip(QStringLiteral("AdGuard VPN — %1").arg(status));
+    m_tray->setToolTip(QStringLiteral("AGV — %1").arg(status));
 }
 
 } // namespace agv

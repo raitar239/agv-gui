@@ -43,11 +43,11 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName(QStringLiteral("agv-gui"));
     QCoreApplication::setApplicationName(QStringLiteral("agv-gui"));
     QCoreApplication::setApplicationVersion(QStringLiteral(AGV_VERSION));
-    QGuiApplication::setApplicationDisplayName(QStringLiteral("AdGuard VPN"));
+    QGuiApplication::setApplicationDisplayName(QStringLiteral("AGV"));
     QGuiApplication::setDesktopFileName(QStringLiteral("agv-gui"));
 
     QCommandLineParser parser;
-    parser.setApplicationDescription(QStringLiteral("AdGuard VPN client for Linux"));
+    parser.setApplicationDescription(QStringLiteral("AGV: VPN connection with per-app exclusions"));
     parser.addHelpOption();
     parser.addVersionOption();
     const QCommandLineOption hiddenOption(QStringLiteral("hidden"),

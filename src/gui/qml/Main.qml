@@ -25,7 +25,7 @@ ApplicationWindow {
     height: 640
     minimumWidth: 320
     minimumHeight: 360
-    title: Daemon.connected ? qsTr("AdGuard VPN — Protected") : qsTr("AdGuard VPN")
+    title: Daemon.connected ? qsTr("AGV — Protected") : "AGV"
     color: Theme.bg
 
     palette.window: Theme.bg

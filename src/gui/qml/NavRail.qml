@@ -37,7 +37,7 @@ Rectangle {
             AppIcon { name: "shield"; color: Theme.accent; size: 26; filled: false }
             Text {
                 visible: root.showLabels
-                text: "AdGuard VPN"
+                text: "AGV"
                 color: Theme.text
                 font.pixelSize: Theme.fontTitle
                 font.weight: Font.Bold

@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
-Name=AdGuard VPN
+Name=AGV
 GenericName=VPN client
-Comment=Connect to AdGuard VPN and exclude apps from it
+Comment=VPN connection with per-app exclusions
 Exec=agv-gui
 Icon=network-vpn
 Terminal=false
