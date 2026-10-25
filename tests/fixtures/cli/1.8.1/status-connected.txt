@@ -1,0 +1,2 @@
+Connected to ATHENS in TUN mode, running on tun0
+You can disconnect by running `adguardvpn-cli disconnect`

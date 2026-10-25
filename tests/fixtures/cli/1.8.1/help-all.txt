@@ -1,0 +1,106 @@
+CLI for controlling AdGuard VPN
+Usage: adguardvpn-cli [OPTIONS] SUBCOMMAND
+
+Options:
+  -h,--help                   Print this help message and exit
+  --help-all                  Show all available commands, subcommands and options
+  -v,--version                Display program version information and exit
+
+Subcommands:
+login
+  Log in to AdGuard VPN
+
+logout
+  Log out from AdGuard VPN
+
+list-locations
+  List all available VPN locations
+  Positionals:
+    count INT                   Number of locations to display. Sort by ping
+  Options:
+    --bash-completion TEXT      List suggestions for bash-completion
+
+connect
+  Connect to AdGuard VPN
+  Options:
+    -l,--location TEXT          Location to connect to (city name, country name, or ISO code). By default, AdGuard VPN connects to the last used location
+    -f,--fastest                Connect to the fastest available location
+    -v,--verbose                Show log from VPN service
+    --no-fork                   Do not fork the VPN service to the background
+    --ppid-file TEXT            File for writing parent process ID
+    --pid-file TEXT             File for writing process ID
+    -y,--yes                    Automatic answering 'yes' to all questions
+    -4,--ipv4only               Force the application to connect only to IPv4 servers
+    -6,--ipv6only               Force the application to connect only to IPv6 servers
+    --log-to-file               Redirect process output to file when --no-fork flag is used
+    --no-progress               Do not show styled log progress when --no-fork flag is not used
+    --boot                      Automatically and indefinitely retries connection
+
+disconnect
+  Stop the VPN service
+
+status
+  Display the current status of the VPN service
+
+license
+  Get license information
+
+config
+  Configure VPN service
+  Subcommands:
+    set-mode                    Set VPN operating mode (TUN/SOCKS). Socks default address is 127.0.0.1:1080. You can adjust port number
+    set-dns                     Set DNS upstream server
+    set-socks-port              Set the SOCKS port
+    set-socks-host              Set the SOCKS listen host. For non-localhost address, you need to protect proxy with username and password
+    set-socks-username          Set the SOCKS username
+    set-socks-password          Set the SOCKS password
+    clear-socks-auth            Clear the SOCKS username and password
+    set-change-system-dns       Set whether to change system DNS servers
+    set-tun-routing-mode        Set VPN tunnel routing mode (AUTO/SCRIPT/NONE)
+    create-route-script         Create a route script with proper permissions
+    set-crash-reporting         Set whether to send crash reports to developers
+    set-telemetry               Set whether to send anonymized usage data to developers
+    set-update-channel          Set update channel (release/beta/nightly)
+    set-protocol                Set the protocol used by AdGuard VPN (auto/http2/quic)
+    set-post-quantum            Set whether to use advanced cryptographic algorithms resistant to quantum computer attacks to protect your traffic from potential future threats
+    set-show-hints              Show hints after command execution
+    set-debug-logging           Set debug logging
+    set-show-notifications      Get notified about the status of the VPN connection
+    set-exclusions-tcp-early-ack
+                                Set whether to route TCP connections to scannable ports through a fake upstream to read the SNI from the TLS ClientHello before making a real connection (helps exclusions work when the suspects cache is empty)
+    set-exclusions-preresolve   Set whether to pre-resolve DNS-resolvable exclusions in the background after the exclusion list is updated (populates the suspects cache in advance)
+    set-exclusions-preresolve-max-queries
+                                Set the maximum number of exclusion domains to pre-resolve (0 means use the default value of 50)
+    set-exclusions-scannable-ports
+                                Set the comma-separated list of ports considered scannable for domain extraction and exclusion matching (e.g. 443,80,8080,8008,853). Pass "" to reset to default
+    set-bound-if-override       Override network interface to use for outbound VPN traffic (pass "" to disable)
+    set-tun-device-name         Set a custom name for the TUN interface created by AdGuard VPN (pass "" to clear and let the backend use the platform default; on macOS must be of the form `utun<N>`, e.g. `utun9`)
+    set-tun-device-name-use-existing
+                                If enabled, AdGuard VPN will attach to an existing TUN interface (named with set-tun-device-name) instead of creating a new one (Linux only)
+    show                        Show current configuration
+
+check-update
+  Check for updates
+
+export-logs
+  Export logs to zip
+  Options:
+    -o,--output TEXT            Path to the output artifact. Can be a directory
+    -f,--force                  Overwrite the output artifact without asking
+
+update
+  Install new version if available
+  Options:
+    -v,--verbose                Show update script output
+    -y,--yes                    Automatic answering 'yes' to all questions
+    -n,--no                     Automatic answering 'no' to all questions
+
+site-exclusions
+  Control site exclusions
+  Subcommands:
+    add                         Add specified exclusions
+    remove                      Remove specified exclusions
+    show                        Show all exclusions
+    clear                       Clear all exclusions
+    mode                        Set VPN exclusion mode (general/selective) or show current mode if no options are passed
+

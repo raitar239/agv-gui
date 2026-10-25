@@ -1,0 +1,5 @@
+Exclusions for [1mGENERAL[0m mode:
+*.ozon.ru
+*.ru
+*.space
+ozon.ru

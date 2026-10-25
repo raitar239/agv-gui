@@ -1,0 +1,6 @@
+0:	from all lookup local
+30800:	from all sport 1-1024 lookup main
+30800:	from all sport 5900-5920 lookup main
+30801:	from all lookup 880
+32766:	from all lookup main
+32767:	from all lookup default

@@ -1,0 +1,8 @@
+[1mISO   COUNTRY              CITY                           PING ESTIMATE
+[0mFR    France               Marseille                      35        
+EE    Estonia              Tallinn                        50        
+IT    Italy                Palermo                        57        
+BE    Belgium              Brussels                       63        
+FR    France               Paris                          70        
+
+You can connect to a location by running `adguardvpn-cli connect -l 'city, country or ISO code'`

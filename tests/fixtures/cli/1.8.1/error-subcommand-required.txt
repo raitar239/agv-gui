@@ -1,0 +1,18 @@
+A subcommand is required
+adguardvpn-cli
+  CLI for controlling AdGuard VPN
+  Options:
+    -v,--version                Display program version information and exit
+  Subcommands:
+    login                       Log in to AdGuard VPN
+    logout                      Log out from AdGuard VPN
+    list-locations              List all available VPN locations
+    connect                     Connect to AdGuard VPN
+    disconnect                  Stop the VPN service
+    status                      Display the current status of the VPN service
+    license                     Get license information
+    config                      Configure VPN service
+    check-update                Check for updates
+    export-logs                 Export logs to zip
+    update                      Install new version if available
+    site-exclusions             Control site exclusions
