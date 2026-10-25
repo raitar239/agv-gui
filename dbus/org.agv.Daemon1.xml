@@ -7,11 +7,11 @@
 
   Authorization (polkit, see data/polkit/org.agv.daemon.policy):
     reads                                  - anyone allowed by the D-Bus policy
-    org.agv.daemon.control                 - connect, disconnect, exclusions, license
+    org.agv.daemon.control                 - connect, disconnect, site and app exclusions, license
     org.agv.daemon.configure               - settings, login, logout, import, stopping external VPNs
 
   Failed calls return org.agv.Error.* errors (NotLoggedIn, CliFailed, CliNotFound, Timeout,
-  UnexpectedOutput, InvalidArgument, Busy, NotAuthorized, NotImplemented, NotFound).
+  UnexpectedOutput, InvalidArgument, Busy, NotAuthorized, NotFound, NotSupported, SystemFailed).
 
   State changes are announced through org.freedesktop.DBus.Properties.PropertiesChanged.
 -->
@@ -103,6 +103,10 @@
     <!--
       Rows: (id, rule) where rule keys are
         name (s), icon (s), desktop_file (s), exe (s), cmdline_match (s), enabled (b)
+      Add/Update take the same keys; Update changes only the keys it is given. An enabled app
+      gets its own cgroup; processes enter it through "agv-run [app option] ID cmd" now and
+      through the exec watcher later. Removing or disabling an app moves its processes back
+      through the VPN for new connections.
     -->
     <method name="ListAppExclusions">
       <arg name="exclusions" type="a(sa{sv})" direction="out"/>
@@ -121,6 +125,8 @@
     <method name="RemoveAppExclusion">
       <arg name="id" type="s" direction="in"/>
     </method>
+    <!-- Per-app byte counters since the rules were last loaded: (id, bytes_out, bytes_in);
+         the builtin agv-run group is reported as "run" -->
     <method name="GetAppTraffic">
       <arg name="traffic" type="a(stt)" direction="out"/>
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="AgvAppTrafficList"/>

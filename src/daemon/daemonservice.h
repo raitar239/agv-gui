@@ -12,6 +12,7 @@
 namespace agv {
 
 class PolkitAuthorizer;
+class AppExclusionService;
 class VpnService;
 struct Error;
 
@@ -31,8 +32,8 @@ class DaemonService : public QObject, protected QDBusContext
     Q_PROPERTY(AgvExternalVpnList ExternalVpns READ externalVpns)
 
 public:
-    DaemonService(VpnService *vpn, PolkitAuthorizer *polkit, QDBusConnection bus,
-                  QObject *parent = nullptr);
+    DaemonService(VpnService *vpn, AppExclusionService *apps, PolkitAuthorizer *polkit,
+                  QDBusConnection bus, QObject *parent = nullptr);
 
     QString state() const;
     QString location() const;
@@ -41,7 +42,7 @@ public:
     QString lastError() const;
     bool loggedIn() const;
     QString siteExclusionMode() const;
-    bool appExclusionsSupported() const { return false; }
+    bool appExclusionsSupported() const;
     AgvExternalVpnList externalVpns() const;
 
 public slots:
@@ -82,10 +83,10 @@ private:
     void authorized(const QString &actionId, std::function<void(QDBusMessage)> action);
     void replyDone(const QDBusMessage &message, const Error &error);
     void replyError(const QDBusMessage &message, const Error &error);
-    void notImplemented();
     void emitPropertiesChanged(const QStringList &names);
 
     VpnService *m_vpn;
+    AppExclusionService *m_apps;
     PolkitAuthorizer *m_polkit;
     QDBusConnection m_bus;
     QVariantMap m_lastProperties;

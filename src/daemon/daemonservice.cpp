@@ -1,5 +1,6 @@
 #include "daemonservice.h"
 
+#include "appexclusionservice.h"
 #include "polkitauthorizer.h"
 #include "vpnservice.h"
 
@@ -22,10 +23,11 @@ const QStringList StatusProperties{
 
 } // namespace
 
-DaemonService::DaemonService(VpnService *vpn, PolkitAuthorizer *polkit, QDBusConnection bus,
-                             QObject *parent)
+DaemonService::DaemonService(VpnService *vpn, AppExclusionService *apps, PolkitAuthorizer *polkit,
+                             QDBusConnection bus, QObject *parent)
     : QObject(parent)
     , m_vpn(vpn)
+    , m_apps(apps)
     , m_polkit(polkit)
     , m_bus(std::move(bus))
 {
@@ -34,6 +36,7 @@ DaemonService::DaemonService(VpnService *vpn, PolkitAuthorizer *polkit, QDBusCon
         emitPropertiesChanged({QStringLiteral("SiteExclusionMode")});
         emit SiteExclusionsChanged();
     });
+    connect(m_apps, &AppExclusionService::changed, this, &DaemonService::AppExclusionsChanged);
     connect(m_vpn, &VpnService::loginUrlReady, this, &DaemonService::LoginUrl);
     connect(m_vpn, &VpnService::loginFinished, this, &DaemonService::LoginFinished);
 }
@@ -45,6 +48,7 @@ QString DaemonService::tunDevice() const { return m_vpn->tunDevice(); }
 QString DaemonService::lastError() const { return m_vpn->lastError(); }
 bool DaemonService::loggedIn() const { return m_vpn->loggedIn(); }
 QString DaemonService::siteExclusionMode() const { return m_vpn->siteExclusionMode(); }
+bool DaemonService::appExclusionsSupported() const { return m_apps->isSupported(); }
 
 AgvExternalVpnList DaemonService::externalVpns() const
 {
@@ -195,29 +199,46 @@ void DaemonService::RemoveSiteExclusions(const QStringList &items)
 
 AgvAppExclusionList DaemonService::ListAppExclusions()
 {
-    // Nothing is excluded until the routing engine lands (stage 3).
+    AgvAppExclusionList result;
+    for (const AppRule &rule : m_apps->rules())
+        result.append({rule.id, AppStore::toMap(rule)});
+    return result;
+}
+
+QString DaemonService::AddAppExclusion(const QVariantMap &rule)
+{
+    authorized(ActionControl, [this, rule](const QDBusMessage &message) {
+        QString id;
+        const Error error = m_apps->add(rule, &id);
+        if (!error.isOk())
+            replyError(message, error);
+        else
+            m_bus.send(message.createReply(id));
+    });
     return {};
 }
 
-QString DaemonService::AddAppExclusion(const QVariantMap &)
+void DaemonService::UpdateAppExclusion(const QString &id, const QVariantMap &rule)
 {
-    notImplemented();
-    return {};
+    authorized(ActionControl, [this, id, rule](const QDBusMessage &message) {
+        replyDone(message, m_apps->update(id, rule));
+    });
 }
 
-void DaemonService::UpdateAppExclusion(const QString &, const QVariantMap &)
+void DaemonService::RemoveAppExclusion(const QString &id)
 {
-    notImplemented();
-}
-
-void DaemonService::RemoveAppExclusion(const QString &)
-{
-    notImplemented();
+    authorized(ActionControl, [this, id](const QDBusMessage &message) {
+        replyDone(message, m_apps->remove(id));
+    });
 }
 
 AgvAppTrafficList DaemonService::GetAppTraffic()
 {
-    return {};
+    AgvAppTrafficList result;
+    const auto traffic = m_apps->traffic();
+    for (auto it = traffic.cbegin(); it != traffic.cend(); ++it)
+        result.append({it.key(), it->bytesOut, it->bytesIn});
+    return result;
 }
 
 AgvConfigMap DaemonService::GetConfig()
@@ -273,11 +294,6 @@ void DaemonService::replyDone(const QDBusMessage &message, const Error &error)
 void DaemonService::replyError(const QDBusMessage &message, const Error &error)
 {
     m_bus.send(message.createErrorReply(error.name, error.message));
-}
-
-void DaemonService::notImplemented()
-{
-    sendErrorReply(errors::NotImplemented, QStringLiteral("App exclusions are not implemented yet"));
 }
 
 void DaemonService::emitPropertiesChanged(const QStringList &names)

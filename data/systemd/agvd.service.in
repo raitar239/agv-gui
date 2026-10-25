@@ -13,8 +13,11 @@ Restart=on-failure
 # HOME for adguardvpn-cli: its login and settings live in /var/lib/agvd.
 StateDirectory=agvd
 StateDirectoryMode=0700
+# /run/agvd/run.sock for agv-run.
+RuntimeDirectory=agvd
+RuntimeDirectoryMode=0755
 
-# App exclusions are sub-cgroups of this service (stage 3).
+# App exclusions are sub-cgroups of this service: <service cgroup>/novpn/<app id>.
 Delegate=yes
 # Only stop agvd itself: the forked VPN process and excluded apps (games, browsers) live in this
 # cgroup too and must survive a daemon restart or upgrade.

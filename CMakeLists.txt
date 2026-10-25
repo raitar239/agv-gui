@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.22)
 project(agv-gui
     VERSION 0.1.0
     DESCRIPTION "GUI and per-app exclusions for AdGuard VPN CLI"
-    LANGUAGES CXX)
+    LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -14,10 +14,11 @@ include(GNUInstallDirs)
 include(CTest)
 
 # Qt 6.4 is the oldest supported version (Debian 12, Ubuntu 24.04).
-find_package(Qt6 6.4 REQUIRED COMPONENTS Core DBus)
+find_package(Qt6 6.4 REQUIRED COMPONENTS Core DBus Network)
 
 add_subdirectory(src/common)
 add_subdirectory(src/daemon)
+add_subdirectory(src/run)
 add_subdirectory(data)
 
 if(BUILD_TESTING)

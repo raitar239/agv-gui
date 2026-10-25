@@ -1,18 +1,27 @@
 # Everything except main() lives in a library so tests can drive VpnService with a fake CLI.
 add_library(agvd-core STATIC
+    appexclusionservice.h
+    appexclusionservice.cpp
+    appstore.h
+    appstore.cpp
     clirunner.h
     clirunner.cpp
+    daemonerror.h
     vpnservice.h
     vpnservice.cpp
     hostsystem.h
     hostsystem.cpp
     polkitauthorizer.h
     polkitauthorizer.cpp
+    routingengine.h
+    routingengine.cpp
+    runsocketserver.h
+    runsocketserver.cpp
     daemonservice.h
     daemonservice.cpp
 )
 target_include_directories(agvd-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(agvd-core PUBLIC agv-common Qt6::Core Qt6::DBus)
+target_link_libraries(agvd-core PUBLIC agv-common Qt6::Core Qt6::DBus Qt6::Network)
 target_compile_options(agvd-core PRIVATE -Wall -Wextra -Wpedantic)
 
 set(adaptor_sources)

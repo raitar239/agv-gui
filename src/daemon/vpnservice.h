@@ -1,6 +1,7 @@
 #pragma once
 
 #include "cliparser.h"
+#include "daemonerror.h"
 #include "hostsystem.h"
 
 #include <QObject>
@@ -16,27 +17,6 @@ class QTimer;
 namespace agv {
 
 class CliRunner;
-
-// Error names returned over D-Bus. An empty name means success.
-namespace errors {
-inline const QString NotLoggedIn = QStringLiteral("org.agv.Error.NotLoggedIn");
-inline const QString CliFailed = QStringLiteral("org.agv.Error.CliFailed");
-inline const QString CliNotFound = QStringLiteral("org.agv.Error.CliNotFound");
-inline const QString Timeout = QStringLiteral("org.agv.Error.Timeout");
-inline const QString UnexpectedOutput = QStringLiteral("org.agv.Error.UnexpectedOutput");
-inline const QString InvalidArgument = QStringLiteral("org.agv.Error.InvalidArgument");
-inline const QString Busy = QStringLiteral("org.agv.Error.Busy");
-inline const QString NotAuthorized = QStringLiteral("org.agv.Error.NotAuthorized");
-inline const QString NotImplemented = QStringLiteral("org.agv.Error.NotImplemented");
-inline const QString NotFound = QStringLiteral("org.agv.Error.NotFound");
-} // namespace errors
-
-struct Error {
-    QString name;
-    QString message;
-
-    bool isOk() const { return name.isEmpty(); }
-};
 
 // The daemon's model of the VPN: wraps CLI commands, keeps the last known state and polls the
 // CLI to notice changes made outside the daemon. Knows nothing about D-Bus.

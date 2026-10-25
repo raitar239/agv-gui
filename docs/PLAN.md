@@ -169,6 +169,37 @@ cgroup v2 → nftables `socket cgroupv2` → `meta mark` → `ip rule fwmark` �
   (временно залогировать `"$@"` и env).
 - Образцы `status` в состоянии connecting, вывод `connect` и `disconnect`.
 
+## Движок исключений, итог (этап 3)
+
+Заменяет SCRIPT-режим и таблицу 421 из исходного плана.
+
+- **AdGuard остаётся в AUTO.** Его туннельные маршруты живут в таблице 880 (`ip rule 30801`), а `main`
+  не трогается: там default через физический интерфейс, его ведёт NetworkManager. Поэтому
+  исключённому трафику хватает `ip rule fwmark 0x61677664 lookup main priority 30700` (раньше
+  правил AdGuard 30800/30801; AdGuard сам обходит VPN так же — `sport 1-1024 lookup main`).
+  Не нужны ни route script, ни своя таблица, ни слежение за шлюзом.
+- nftables, таблица `inet agvd`, загружается целиком атомарно (`table; delete table; table {…}`):
+  - `output` (route hook): `socket cgroupv2 level N "<own>/novpn/<id>" counter meta mark set … ct mark set meta mark`;
+  - `input`: те же совпадения со счётчиком — входящий трафик приложения;
+  - `prerouting`: `ct mark … meta mark set ct mark` — ответы несут метку;
+  - `postrouting`: `meta mark … oifname != "lo" masquerade` — источник уже выбран под туннель.
+- `net.ipv4.conf.all.src_valid_mark=1` (как wg-quick): reverse-path фильтр учитывает метку ответа,
+  `rp_filter` глобально не ослабляем. Исходное значение хранится в `routing-state` и
+  восстанавливается `agvd --cleanup`.
+- cgroup: `<cgroup демона>/novpn/<app-id>` (`Delegate=yes`), плюс встроенная группа `run` для
+  `agv-run cmd` без настроенного приложения. Пути резолвятся nftables при загрузке → каталоги
+  создаются до загрузки правил. Удалённое/выключенное приложение: процессы возвращаются в cgroup
+  демона (новые соединения снова через VPN), каталог удаляется.
+- Правила действуют всегда, пока демон работает (без процессов в группах они ничего не меняют) и
+  переживают его рестарт вместе с процессами (`KillMode=process`); снимаются только
+  `agvd --cleanup` (его вызывает `dev-install.sh --uninstall`). `routing-state` хранит пути cgroup,
+  потому что `--cleanup` запускается вне cgroup сервиса.
+- `agv-run`: `/run/agvd/run.sock` (`RuntimeDirectory=agvd`), запрос `RUN [id]\n`, ответ `OK` /
+  `ERR …`; демон берёт pid из `SO_PEERPIDFD` (иначе `SO_PEERCRED`), так что клиент переносит только
+  себя; любой локальный пользователь может исключить свои процессы. Если демон отказал или
+  недоступен — команда не запускается (никакого тихого запуска через VPN).
+- DNS исключённых приложений по-прежнему идёт через DNS-прокси AdGuard (если `Change system DNS: on`).
+
 ## Интерфейс
 
 - Экраны: Главная (подключение, локация, статус, пинг) · Локации (поиск, сортировка по пингу,
@@ -211,7 +242,13 @@ cgroup v2 → nftables `socket cgroupv2` → `meta mark` → `ip rule fwmark` �
    остановка чужого VPN, connect → disconnect → connect, интернет после каждого шага; polkit от
    обычного пользователя: `control` без пароля, `configure` — окно пароля.
    Замечено: CLI отвечает «connected» на ~1 с раньше, чем готов его DNS-прокси.
-3. Движок маршрутизации: SCRIPT-режим, nftables, cgroup, agv-run.
+3. Движок маршрутизации: nftables, cgroup, agv-run.
+   ✓ Пересмотрено (см. «Движок исключений, итог»): SCRIPT-режим не нужен. ✓ `AppStore`
+   (`app-exclusions.json`), `RoutingEngine`, `AppExclusionService`, `RunSocketServer`, `agv-run` (C),
+   D-Bus `List/Add/Update/RemoveAppExclusion`, `GetAppTraffic`, `agvd --cleanup`.
+   ✓ Тесты: генерация правил, загрузка правил в настоящий nftables в `unshare -rn` (без root),
+   движок на поддельных cgroupfs и /proc/sys, сквозной тест настоящего `agv-run` (pid после exec
+   совпадает с перенесённым). Осталось: проверка на системе (`scripts/root-exclusion-test.sh`).
 4. GUI MVP: главная, локации, сайты-исключения, трей, адаптивная сетка.
 5. Исключения приложений: выбор из .desktop, exec watcher, переписывание .desktop. Проверить
    порталы/screen sharing у перенесённых процессов.

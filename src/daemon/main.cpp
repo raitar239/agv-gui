@@ -1,8 +1,12 @@
+#include "appexclusionservice.h"
+#include "appstore.h"
 #include "clirunner.h"
 #include "daemon1adaptor.h"
 #include "daemonservice.h"
 #include "dbustypes.h"
 #include "polkitauthorizer.h"
+#include "routingengine.h"
+#include "runsocketserver.h"
 #include "vpnservice.h"
 
 #include <QCommandLineParser>
@@ -30,6 +34,17 @@ QString defaultDataDir()
     return QStringLiteral("/var/lib/agvd");
 }
 
+QString defaultRuntimeDir(bool session)
+{
+    // systemd sets RUNTIME_DIRECTORY from RuntimeDirectory=agvd.
+    const QString fromSystemd = qEnvironmentVariable("RUNTIME_DIRECTORY");
+    if (!fromSystemd.isEmpty())
+        return fromSystemd.split(QLatin1Char(':')).first();
+    if (session && !qEnvironmentVariableIsEmpty("XDG_RUNTIME_DIR"))
+        return qEnvironmentVariable("XDG_RUNTIME_DIR") + QStringLiteral("/agvd");
+    return QStringLiteral("/run/agvd");
+}
+
 } // namespace
 
 int main(int argc, char *argv[])
@@ -52,7 +67,14 @@ int main(int argc, char *argv[])
     const QCommandLineOption cliOption(QStringLiteral("cli"),
                                        QStringLiteral("Path to adguardvpn-cli."),
                                        QStringLiteral("path"));
-    parser.addOptions({sessionOption, dataDirOption, cliOption});
+    const QCommandLineOption runtimeDirOption(
+        QStringLiteral("runtime-dir"),
+        QStringLiteral("Directory for the agv-run socket (default: $RUNTIME_DIRECTORY or /run/agvd)."),
+        QStringLiteral("dir"));
+    const QCommandLineOption cleanupOption(
+        QStringLiteral("cleanup"),
+        QStringLiteral("Remove all routing state for app exclusions (nftables, ip rules, cgroups) and exit."));
+    parser.addOptions({sessionOption, dataDirOption, cliOption, runtimeDirOption, cleanupOption});
     parser.process(app);
 
     const bool session = parser.isSet(sessionOption);
@@ -65,6 +87,18 @@ int main(int argc, char *argv[])
         return 1;
     }
     QFile::setPermissions(dataDir, QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner);
+
+    ProcessCommands commands;
+    RoutingPaths routingPaths;
+    routingPaths.stateFile = dataDir + QStringLiteral("/routing-state");
+    RoutingEngine routing(&commands, routingPaths);
+
+    if (parser.isSet(cleanupOption)) {
+        // Run from the uninstall path after agvd has stopped; init() only finds the cgroup.
+        routing.init();
+        routing.teardown();
+        return 0;
+    }
 
     const QString cliPath = parser.isSet(cliOption) ? parser.value(cliOption) : CliRunner::findProgram();
     if (cliPath.isEmpty())
@@ -95,8 +129,10 @@ int main(int argc, char *argv[])
 
     CliRunner cli(cliPath, dataDir);
     VpnService vpn(&cli);
+    AppStore appStore(dataDir + QStringLiteral("/app-exclusions.json"));
+    AppExclusionService apps(&appStore, &routing);
     PolkitAuthorizer polkit(bus, !session);
-    DaemonService service(&vpn, &polkit, bus);
+    DaemonService service(&vpn, &apps, &polkit, bus);
     new Daemon1Adaptor(&service);
 
     if (!bus.registerObject(DBusPath, &service)) {
@@ -109,6 +145,15 @@ int main(int argc, char *argv[])
                   qPrintable(bus.lastError().message()));
         return 1;
     }
+
+    apps.start();
+
+    const QString runtimeDir = parser.isSet(runtimeDirOption) ? parser.value(runtimeDirOption)
+                                                              : defaultRuntimeDir(session);
+    QDir().mkpath(runtimeDir);
+    RunSocketServer runSocket(&apps, runtimeDir + QStringLiteral("/run.sock"));
+    if (!runSocket.listen())
+        qWarning("agvd: agv-run socket unavailable: %s", qPrintable(runSocket.errorString()));
 
     vpn.start();
     return app.exec();
