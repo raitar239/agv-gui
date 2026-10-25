@@ -159,6 +159,69 @@ private slots:
         QCOMPARE(traffic.value(leaf).bytesOut, 0u);
     }
 
+    void ipRulesAreValidForRealIproute2()
+    {
+        // Both selectors must be accepted by the real ip(8) and show up as expected.
+        const auto rules = runInNetns(QStringLiteral(
+            "ip -4 rule add fwmark 0x61677664 lookup main priority 30700 && "
+            "ip -4 rule add not fwmark 0x61677664 lookup main priority 30701 && ip -4 rule"), {});
+        if (!rules)
+            QSKIP("unshare -rn is not available here");
+        QVERIFY2(rules->contains("30700:\tfrom all fwmark 0x61677664 lookup main"), rules->constData());
+        QVERIFY2(rules->contains("30701:\tnot from all fwmark 0x61677664 lookup main"), rules->constData());
+    }
+
+    void vpnOnlyModeFlipsTheRule()
+    {
+        FakeSystem system;
+        FakeCommands commands;
+        RoutingEngine engine(&commands, system.paths);
+        QVERIFY(engine.init());
+
+        QVERIFY(engine.apply({QStringLiteral("run")}, RoutingEngine::Mode::VpnOnly));
+        QVERIFY(commands.commands().contains(
+            QStringLiteral("ip -4 rule add not fwmark 0x61677664 lookup main priority 30700")));
+
+        commands.calls.clear();
+        QVERIFY(engine.apply({QStringLiteral("run")}, RoutingEngine::Mode::Bypass));
+        QVERIFY(commands.commands().contains(
+            QStringLiteral("ip -4 rule add fwmark 0x61677664 lookup main priority 30700")));
+        // The old rule is removed first, whatever its selector was.
+        QVERIFY(commands.commands().indexOf(QStringLiteral("ip -4 rule del priority 30700"))
+                < commands.commands().indexOf(QStringLiteral("ip -4 rule add fwmark 0x61677664 lookup main priority 30700")));
+    }
+
+    void serviceMode()
+    {
+        FakeSystem system;
+        FakeCommands commands;
+        RoutingEngine engine(&commands, system.paths);
+        QTemporaryDir dir;
+        const QString path = dir.path() + QStringLiteral("/apps.json");
+        AppStore store(path);
+        AppExclusionService apps(&store, &engine);
+        apps.start();
+        QCOMPARE(apps.mode(), QStringLiteral("bypass"));
+
+        QCOMPARE(apps.setMode(QStringLiteral("everything")).name, errors::InvalidArgument);
+        QVERIFY(apps.setMode(QStringLiteral("vpn-only")).isOk());
+        QCOMPARE(apps.mode(), QStringLiteral("vpn-only"));
+        QVERIFY(commands.commands().contains(
+            QStringLiteral("ip -4 rule add not fwmark 0x61677664 lookup main priority 30700")));
+
+        AppStore reloaded(path);
+        QCOMPARE(reloaded.load(), QString());
+        QCOMPARE(reloaded.mode(), QStringLiteral("vpn-only"));
+
+        // A failing kernel update keeps the old mode everywhere.
+        commands.answers.insert(QStringLiteral("nft -f -"), {1, "Error: boom"});
+        QCOMPARE(apps.setMode(QStringLiteral("bypass")).name, errors::SystemFailed);
+        QCOMPARE(apps.mode(), QStringLiteral("vpn-only"));
+        AppStore again(path);
+        QCOMPARE(again.load(), QString());
+        QCOMPARE(again.mode(), QStringLiteral("vpn-only"));
+    }
+
     void initFindsOwnCgroup()
     {
         FakeSystem system;

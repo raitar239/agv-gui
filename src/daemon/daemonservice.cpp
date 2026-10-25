@@ -36,7 +36,10 @@ DaemonService::DaemonService(VpnService *vpn, AppExclusionService *apps, PolkitA
         emitPropertiesChanged({QStringLiteral("SiteExclusionMode")});
         emit SiteExclusionsChanged();
     });
-    connect(m_apps, &AppExclusionService::changed, this, &DaemonService::AppExclusionsChanged);
+    connect(m_apps, &AppExclusionService::changed, this, [this] {
+        emitPropertiesChanged({QStringLiteral("AppExclusionMode")});
+        emit AppExclusionsChanged();
+    });
     connect(m_vpn, &VpnService::loginUrlReady, this, &DaemonService::LoginUrl);
     connect(m_vpn, &VpnService::loginFinished, this, &DaemonService::LoginFinished);
 }
@@ -49,6 +52,7 @@ QString DaemonService::lastError() const { return m_vpn->lastError(); }
 bool DaemonService::loggedIn() const { return m_vpn->loggedIn(); }
 QString DaemonService::siteExclusionMode() const { return m_vpn->siteExclusionMode(); }
 bool DaemonService::appExclusionsSupported() const { return m_apps->isSupported(); }
+QString DaemonService::appExclusionMode() const { return m_apps->mode(); }
 
 AgvExternalVpnList DaemonService::externalVpns() const
 {
@@ -229,6 +233,13 @@ void DaemonService::RemoveAppExclusion(const QString &id)
 {
     authorized(ActionControl, [this, id](const QDBusMessage &message) {
         replyDone(message, m_apps->remove(id, callerUid(message)));
+    });
+}
+
+void DaemonService::SetAppExclusionMode(const QString &mode)
+{
+    authorized(ActionConfigure, [this, mode](const QDBusMessage &message) {
+        replyDone(message, m_apps->setMode(mode));
     });
 }
 

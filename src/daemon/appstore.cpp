@@ -50,6 +50,7 @@ AppStore::AppStore(QString path)
 QString AppStore::load()
 {
     m_rules.clear();
+    m_mode = QStringLiteral("bypass");
     QFile file(m_path);
     if (!file.exists())
         return {};
@@ -64,6 +65,11 @@ QString AppStore::load()
     const QJsonObject root = document.object();
     if (root.value(QStringLiteral("version")).toInt() != FormatVersion)
         return QStringLiteral("%1 has an unsupported version").arg(m_path);
+
+    const QString mode = root.value(QStringLiteral("mode")).toString(QStringLiteral("bypass"));
+    if (!isValidMode(mode))
+        return QStringLiteral("%1 has an unknown mode %2").arg(m_path, mode);
+    m_mode = mode;
 
     for (const QJsonValue &value : root.value(QStringLiteral("apps")).toArray()) {
         const QVariantMap map = value.toObject().toVariantMap();
@@ -90,7 +96,9 @@ QString AppStore::save() const
         map.insert(QStringLiteral("owner_uid"), rule.ownerUid);
         apps.append(QJsonObject::fromVariantMap(map));
     }
-    const QJsonObject root{{QStringLiteral("version"), FormatVersion}, {QStringLiteral("apps"), apps}};
+    const QJsonObject root{{QStringLiteral("version"), FormatVersion},
+                           {QStringLiteral("mode"), m_mode},
+                           {QStringLiteral("apps"), apps}};
 
     QSaveFile file(m_path);
     if (!file.open(QIODevice::WriteOnly))
@@ -163,6 +171,11 @@ QVariantMap AppStore::toMap(const AppRule &rule)
         {KeyCmdlineMatch, rule.cmdlineMatch},
         {KeyEnabled, rule.enabled},
     };
+}
+
+bool AppStore::isValidMode(const QString &mode)
+{
+    return mode == QLatin1String("bypass") || mode == QLatin1String("vpn-only");
 }
 
 bool AppStore::isValidId(const QString &id)

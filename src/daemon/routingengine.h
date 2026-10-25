@@ -39,7 +39,7 @@ struct RoutingPaths {
     QString stateFile;
 };
 
-// Excludes processes from the VPN at the kernel level:
+// Excludes processes from the VPN at the kernel level (or, in VPN-only mode, keeps only them in it):
 //
 //   cgroup <base>/<app id>  →  nftables "socket cgroupv2" marks the packets  →
 //   "ip rule fwmark … lookup main" sends them past AdGuard's table 880 to the physical route  →
@@ -56,6 +56,10 @@ public:
     static inline const QString TableName = QStringLiteral("agvd");
     static inline const QString BuiltinRunId = QStringLiteral("run"); // plain "agv-run cmd"
 
+    // Bypass: the listed apps skip the VPN. VpnOnly: only the listed apps use it, everything else
+    // goes straight out. Same marks and cgroups; only the ip rule's selector flips.
+    enum class Mode { Bypass, VpnOnly };
+
     explicit RoutingEngine(SystemCommands *commands, RoutingPaths paths = RoutingPaths());
 
     // The daemon's own cgroup ("system.slice/agvd.service") from /proc/self/cgroup; app cgroups
@@ -67,7 +71,7 @@ public:
 
     // Makes the system match the given app ids (enabled exclusions): creates their cgroups,
     // loads the nftables table atomically, adds the ip rules and sysctls. Idempotent.
-    bool apply(const QStringList &appIds);
+    bool apply(const QStringList &appIds, Mode mode = Mode::Bypass);
 
     // Removes everything apply() set up and moves excluded processes back. Works without init()
     // as long as the state file is there.
@@ -90,7 +94,7 @@ private:
     QString cgroupDir(const QString &relative) const;
     bool ensureCgroup(const QString &appId);
     void releaseCgroup(const QString &appId);
-    bool applyIpRules();
+    bool applyIpRules(Mode mode);
     void removeIpRules();
     void setSrcValidMark();
     QMap<QString, QString> readState() const;

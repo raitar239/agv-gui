@@ -144,7 +144,7 @@ QByteArray RoutingEngine::buildRuleset(const QString &base, const QStringList &a
     return script.toUtf8();
 }
 
-bool RoutingEngine::apply(const QStringList &appIds)
+bool RoutingEngine::apply(const QStringList &appIds, Mode mode)
 {
     if (!m_supported)
         return fail(QStringLiteral("App exclusions are not supported: %1").arg(m_lastError));
@@ -160,7 +160,7 @@ bool RoutingEngine::apply(const QStringList &appIds)
     if (nft.exitCode != 0)
         return fail(QStringLiteral("nft failed: %1").arg(QString::fromUtf8(nft.output).trimmed()));
 
-    if (!applyIpRules())
+    if (!applyIpRules(mode))
         return false;
     setSrcValidMark();
 
@@ -271,12 +271,15 @@ void RoutingEngine::releaseCgroup(const QString &appId)
     QDir().rmdir(dir);
 }
 
-bool RoutingEngine::applyIpRules()
+bool RoutingEngine::applyIpRules(Mode mode)
 {
     removeIpRules();
-    const QStringList args{QStringLiteral("rule"), QStringLiteral("add"), QStringLiteral("fwmark"), markHex(),
-                           QStringLiteral("lookup"), QStringLiteral("main"), QStringLiteral("priority"),
-                           QString::number(RulePriority)};
+    // Marked traffic, or in VPN-only mode everything unmarked, skips AdGuard's table 880.
+    QStringList args{QStringLiteral("rule"), QStringLiteral("add")};
+    if (mode == Mode::VpnOnly)
+        args << QStringLiteral("not");
+    args << QStringLiteral("fwmark") << markHex() << QStringLiteral("lookup") << QStringLiteral("main")
+         << QStringLiteral("priority") << QString::number(RulePriority);
     const auto v4 = m_commands->run(QStringLiteral("ip"), QStringList{QStringLiteral("-4")} + args);
     if (v4.exitCode != 0)
         return fail(QStringLiteral("ip rule failed: %1").arg(QString::fromUtf8(v4.output).trimmed()));

@@ -12,6 +12,8 @@ Item {
     signal openLocations()
 
     readonly property bool working: Daemon.busy || Daemon.transitioning
+    readonly property bool vpnOnly: Daemon.appExclusionMode === "vpn-only"
+    readonly property int vpnApps: Daemon.apps.filter(function (app) { return app.enabled }).length
     readonly property string currentCity: prettyCity(Daemon.location)
     // Reading total makes these re-run once the location list arrives.
     readonly property string currentCountry: Daemon.locations.total >= 0 ? Daemon.locations.countryOf(currentCity) : ""
@@ -78,7 +80,8 @@ Item {
                 Layout.fillWidth: true
                 Text {
                     text: page.working ? (Daemon.state === "disconnecting" ? qsTr("Disconnecting…") : qsTr("Connecting…"))
-                                       : Daemon.connected ? qsTr("Protected") : qsTr("Not protected")
+                                       : Daemon.connected ? (page.vpnOnly ? qsTr("Connected") : qsTr("Protected"))
+                                                          : qsTr("Not protected")
                     color: Daemon.connected && !page.working ? Theme.accent : Theme.text
                     font.pixelSize: Theme.fontHeadline
                     font.weight: Font.Bold
@@ -89,6 +92,9 @@ Item {
                     text: {
                         if (Daemon.state === "error" && Daemon.lastError !== "")
                             return Daemon.lastError
+                        if (Daemon.connected && page.vpnOnly)
+                            return page.vpnApps === 1 ? qsTr("Only 1 app uses %1").arg(page.currentPlace)
+                                                      : qsTr("Only %1 apps use %2").arg(page.vpnApps).arg(page.currentPlace)
                         if (Daemon.connected)
                             return qsTr("Your traffic goes through %1").arg(page.currentPlace)
                         return Daemon.loggedIn ? qsTr("Press the button to connect") : ""
@@ -98,6 +104,24 @@ Item {
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.Wrap
                     Layout.fillWidth: true
+                }
+                Text {
+                    visible: Daemon.connected && !page.working
+                             && (Daemon.tunnelBytesIn > 0 || Daemon.tunnelBytesOut > 0)
+                    text: "↓ %1   ↑ %2".arg(Theme.formatBytes(Daemon.tunnelBytesIn))
+                                       .arg(Theme.formatBytes(Daemon.tunnelBytesOut))
+                    color: Theme.textSecondary
+                    font.pixelSize: Theme.fontSmall
+                    horizontalAlignment: Text.AlignHCenter
+                    Layout.fillWidth: true
+
+                    Timer {
+                        interval: 2000
+                        repeat: true
+                        triggeredOnStart: true
+                        running: Daemon.connected && page.visible
+                        onTriggered: Daemon.refreshTunnelTraffic()
+                    }
                 }
             }
 

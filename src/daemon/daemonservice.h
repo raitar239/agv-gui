@@ -30,6 +30,7 @@ class DaemonService : public QObject, protected QDBusContext
     Q_PROPERTY(QString SiteExclusionMode READ siteExclusionMode)
     Q_PROPERTY(bool AppExclusionsSupported READ appExclusionsSupported)
     Q_PROPERTY(AgvExternalVpnList ExternalVpns READ externalVpns)
+    Q_PROPERTY(QString AppExclusionMode READ appExclusionMode)
 
 public:
     DaemonService(VpnService *vpn, AppExclusionService *apps, PolkitAuthorizer *polkit,
@@ -44,6 +45,7 @@ public:
     QString siteExclusionMode() const;
     bool appExclusionsSupported() const;
     AgvExternalVpnList externalVpns() const;
+    QString appExclusionMode() const;
 
 public slots:
     void Connect(const QString &location);
@@ -68,6 +70,7 @@ public slots:
     void UpdateAppExclusion(const QString &id, const QVariantMap &rule);
     void RemoveAppExclusion(const QString &id);
     AgvAppTrafficList GetAppTraffic();
+    void SetAppExclusionMode(const QString &mode);
 
     AgvConfigMap GetConfig();
     void SetConfig(const QString &key, const QString &value);

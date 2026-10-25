@@ -31,6 +31,10 @@ public:
     Error update(const QString &id, const QVariantMap &fields, qint64 callerUid);
     Error remove(const QString &id, qint64 callerUid);
 
+    QString mode() const { return m_store->mode(); }
+    // Switches between "bypass" and "vpn-only" for the whole system.
+    Error setMode(const QString &mode);
+
     // Moves a process into an app's cgroup; an empty appId means the builtin "agv-run" group.
     Error moveProcess(pid_t pid, const QString &appId);
 

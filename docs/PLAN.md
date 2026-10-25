@@ -277,4 +277,12 @@ cgroup v2 → nftables `socket cgroupv2` → `meta mark` → `ip rule fwmark` �
    Steam/Lutris указывают на сам Steam/Lutris — исключается весь лаунчер вместе с играми.
    Порталы/screen sharing у перенесённых процессов — проверить на практике.
 6. Сверху: потрафиковая статистика, inverse-режим, профили.
+   ✓ Режим `vpn-only` («только эти приложения через VPN»): те же метки и cgroup, меняется только правило —
+   `not fwmark … lookup main`; помеченный трафик уходит в таблицу 880 AdGuard, masquerade чинит source
+   уже в tun. Хранится в `app-exclusions.json` (`mode`), D-Bus `AppExclusionMode` /
+   `SetAppExclusionMode` под `org.agv.daemon.configure` (влияет на всю систему). `agv-run` в этом
+   режиме, наоборот, пускает через VPN. GUI: переключатель на вкладке Apps; на главной в этом режиме
+   «Connected — Only N apps use …» вместо «Protected».
+   ✓ Статистика: по приложениям (были), трафик сессии VPN на главной (`/sys/class/net/<tun>/statistics`).
+   ✗ Профили отложены: переключатели приложений и два режима покрывают сценарии.
 7. Упаковка и тесты: Arch, Fedora, Ubuntu, Debian; Hyprland, KDE, GNOME.

@@ -33,6 +33,11 @@ public:
     QString save() const;
 
     const QList<AppRule> &rules() const { return m_rules; }
+
+    // "bypass" (listed apps skip the VPN) or "vpn-only" (only listed apps use it).
+    QString mode() const { return m_mode; }
+    void setMode(const QString &mode) { m_mode = mode; }
+    static bool isValidMode(const QString &mode);
     const AppRule *find(const QString &id) const;
 
     // Builds a rule from D-Bus fields (name, icon, desktop_file, exe, cmdline_match, enabled).
@@ -52,6 +57,7 @@ public:
 private:
     QString m_path;
     QList<AppRule> m_rules;
+    QString m_mode = QStringLiteral("bypass");
 };
 
 } // namespace agv

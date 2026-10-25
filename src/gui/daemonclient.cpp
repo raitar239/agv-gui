@@ -9,6 +9,7 @@
 #include <QDBusPendingCallWatcher>
 #include <QDBusServiceWatcher>
 #include <QDesktopServices>
+#include <QFile>
 #include <QRegularExpression>
 #include <QUrl>
 
@@ -221,6 +222,35 @@ bool DaemonClient::isAppExcluded(const QString &desktopFile, const QString &exe)
             return true;
     }
     return false;
+}
+
+void DaemonClient::setAppExclusionMode(const QString &mode)
+{
+    call(QStringLiteral("SetAppExclusionMode"), {mode});
+}
+
+void DaemonClient::refreshTunnelTraffic()
+{
+    const QString device = m_props.value(QStringLiteral("TunDevice")).toString();
+    // Interface names never contain '/', but this path is built from D-Bus data.
+    if (!connected() || device.isEmpty() || device.contains(QLatin1Char('/'))) {
+        if (m_tunnelIn != 0 || m_tunnelOut != 0) {
+            m_tunnelIn = m_tunnelOut = 0;
+            emit tunnelTrafficChanged();
+        }
+        return;
+    }
+    auto read = [&device](const char *counter) {
+        QFile file(QStringLiteral("/sys/class/net/%1/statistics/%2").arg(device, QLatin1String(counter)));
+        return file.open(QIODevice::ReadOnly) ? file.readAll().trimmed().toDouble() : 0.0;
+    };
+    const double in = read("rx_bytes");
+    const double out = read("tx_bytes");
+    if (in != m_tunnelIn || out != m_tunnelOut) {
+        m_tunnelIn = in;
+        m_tunnelOut = out;
+        emit tunnelTrafficChanged();
+    }
 }
 
 void DaemonClient::onAppExclusionsChanged()

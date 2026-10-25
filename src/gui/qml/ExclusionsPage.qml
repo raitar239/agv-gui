@@ -164,12 +164,37 @@ Item {
                 Layout.fillWidth: true
             }
 
+            Card {
+                visible: Daemon.appExclusionsSupported
+                Layout.fillWidth: true
+                ColumnLayout {
+                    width: parent.width
+                    spacing: 10
+                    Segmented {
+                        options: [{ value: "bypass", label: qsTr("Bypass VPN") },
+                                  { value: "vpn-only", label: qsTr("Only via VPN") }]
+                        value: Daemon.appExclusionMode
+                        onActivated: (value) => Daemon.setAppExclusionMode(value)
+                        Layout.fillWidth: true
+                    }
+                    Text {
+                        text: Daemon.appExclusionMode === "vpn-only"
+                              ? qsTr("Only the apps below use the VPN. Everything else on this computer goes straight to the internet.")
+                              : qsTr("The apps below go straight to the internet. Everything else uses the VPN.")
+                        color: Daemon.appExclusionMode === "vpn-only" ? Theme.warning : Theme.textSecondary
+                        font.pixelSize: Theme.fontSmall
+                        wrapMode: Text.Wrap
+                        Layout.fillWidth: true
+                    }
+                }
+            }
+
             RowLayout {
                 visible: Daemon.appExclusionsSupported
                 spacing: 12
                 Layout.fillWidth: true
                 Text {
-                    text: qsTr("These apps go straight to the internet, however they are started.")
+                    text: qsTr("Apps are matched however they are started: menu, terminal, Lutris, Steam.")
                     color: Theme.textSecondary
                     font.pixelSize: Theme.fontSmall
                     wrapMode: Text.Wrap
@@ -274,7 +299,9 @@ Item {
                     Text {
                         visible: Daemon.appsLoaded
                         width: parent.width
-                        text: qsTr("Add a game or a program that should not use the VPN. You can also start anything outside the VPN with: agv-run <command>")
+                        text: Daemon.appExclusionMode === "vpn-only"
+                              ? qsTr("Add the programs that should use the VPN. You can also start anything through it with: agv-run <command>")
+                              : qsTr("Add a game or a program that should not use the VPN. You can also start anything outside the VPN with: agv-run <command>")
                         color: Theme.textSecondary
                         font.pixelSize: Theme.fontSmall
                         horizontalAlignment: Text.AlignHCenter

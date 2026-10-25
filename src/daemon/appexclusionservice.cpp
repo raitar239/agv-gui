@@ -6,6 +6,11 @@ namespace agv {
 
 namespace {
 
+RoutingEngine::Mode routingMode(const QString &mode)
+{
+    return mode == QLatin1String("vpn-only") ? RoutingEngine::Mode::VpnOnly : RoutingEngine::Mode::Bypass;
+}
+
 bool mayChange(const AppRule &rule, qint64 callerUid)
 {
     // root manages everything; users manage their own rules.
@@ -32,7 +37,7 @@ void AppExclusionService::start()
         return;
     }
     // Also adopts cgroups (and the processes in them) left by a previous agvd.
-    m_available = m_engine->apply(activeIds());
+    m_available = m_engine->apply(activeIds(), routingMode(m_store->mode()));
     if (!m_available) {
         qWarning("agvd: cannot apply app exclusions: %s", qPrintable(m_engine->lastError()));
         return;
@@ -99,6 +104,26 @@ Error AppExclusionService::remove(const QString &id, qint64 callerUid)
     return commit(previous);
 }
 
+Error AppExclusionService::setMode(const QString &mode)
+{
+    if (!AppStore::isValidMode(mode))
+        return {errors::InvalidArgument, QStringLiteral("Mode must be bypass or vpn-only")};
+    if (!isSupported())
+        return {errors::NotSupported, unsupportedReason()};
+    if (mode == m_store->mode())
+        return {};
+
+    const QString previous = m_store->mode();
+    m_store->setMode(mode);
+    const Error error = commit(m_store->rules());
+    if (!error.isOk()) {
+        // Keep memory, kernel and the saved file on the old mode.
+        m_store->setMode(previous);
+        m_engine->apply(activeIds(), routingMode(previous));
+    }
+    return error;
+}
+
 Error AppExclusionService::moveProcess(pid_t pid, const QString &appId)
 {
     if (!isSupported())
@@ -153,10 +178,10 @@ QStringList AppExclusionService::activeIds() const
 
 Error AppExclusionService::commit(const QList<AppRule> &previous)
 {
-    if (!m_engine->apply(activeIds())) {
+    if (!m_engine->apply(activeIds(), routingMode(m_store->mode()))) {
         const QString reason = m_engine->lastError();
         m_store->setRules(previous);
-        m_engine->apply(activeIds());
+        m_engine->apply(activeIds(), routingMode(m_store->mode()));
         return {errors::SystemFailed, reason};
     }
 

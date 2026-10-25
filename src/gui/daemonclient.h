@@ -38,6 +38,11 @@ class DaemonClient : public QObject
     Q_PROPERTY(QStringList siteExclusions READ siteExclusions NOTIFY siteExclusionsChanged)
     Q_PROPERTY(bool siteExclusionsLoaded READ siteExclusionsLoaded NOTIFY siteExclusionsChanged)
     Q_PROPERTY(bool appExclusionsSupported READ appExclusionsSupported NOTIFY statusChanged)
+    // "bypass" or "vpn-only"
+    Q_PROPERTY(QString appExclusionMode READ appExclusionMode NOTIFY statusChanged)
+    // Bytes through the tunnel since it came up; refreshed by refreshTunnelTraffic().
+    Q_PROPERTY(double tunnelBytesIn READ tunnelBytesIn NOTIFY tunnelTrafficChanged)
+    Q_PROPERTY(double tunnelBytesOut READ tunnelBytesOut NOTIFY tunnelTrafficChanged)
     Q_PROPERTY(QVariantMap license READ license NOTIFY licenseChanged)
     Q_PROPERTY(bool loginPending READ loginPending NOTIFY loginPendingChanged)
     Q_PROPERTY(QObject *locations READ locations CONSTANT)
@@ -65,6 +70,13 @@ public:
     QStringList siteExclusions() const { return m_siteExclusions; }
     bool siteExclusionsLoaded() const { return m_siteExclusionsLoaded; }
     bool appExclusionsSupported() const { return m_props.value(QStringLiteral("AppExclusionsSupported")).toBool(); }
+    QString appExclusionMode() const
+    {
+        const QString mode = m_props.value(QStringLiteral("AppExclusionMode")).toString();
+        return mode.isEmpty() ? QStringLiteral("bypass") : mode;
+    }
+    double tunnelBytesIn() const { return m_tunnelIn; }
+    double tunnelBytesOut() const { return m_tunnelOut; }
     QVariantMap license() const { return m_license; }
     bool loginPending() const { return m_loginPending; }
     QObject *locations() const;
@@ -97,6 +109,10 @@ public:
     // True when an app with this .desktop file or program is already in the list.
     Q_INVOKABLE bool isAppExcluded(const QString &desktopFile, const QString &exe) const;
 
+    Q_INVOKABLE void setAppExclusionMode(const QString &mode);
+    // Reads the tunnel interface counters from sysfs (cheap; called by the UI while visible).
+    Q_INVOKABLE void refreshTunnelTraffic();
+
     Q_INVOKABLE void refreshLicense();
     Q_INVOKABLE void login();
     Q_INVOKABLE void cancelLogin();
@@ -110,6 +126,7 @@ signals:
     void siteExclusionsChanged();
     void licenseChanged();
     void appsChanged();
+    void tunnelTrafficChanged();
     void loginPendingChanged();
     void errorOccurred(const QString &message);
     void info(const QString &message);
@@ -148,6 +165,8 @@ private:
     QHash<QString, QPair<quint64, quint64>> m_traffic;
     QVariantList m_apps;
     bool m_appsLoaded = false;
+    double m_tunnelIn = 0;
+    double m_tunnelOut = 0;
     bool m_loginPending = false;
 };
 

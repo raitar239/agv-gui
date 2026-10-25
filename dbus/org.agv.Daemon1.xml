@@ -8,7 +8,8 @@
   Authorization (polkit, see data/polkit/org.agv.daemon.policy):
     reads                                  - anyone allowed by the D-Bus policy
     org.agv.daemon.control                 - connect, disconnect, site and app exclusions, license
-    org.agv.daemon.configure               - settings, login, logout, import, stopping external VPNs
+    org.agv.daemon.configure               - settings, login, logout, import, stopping external VPNs,
+                                             app exclusion mode
 
   Failed calls return org.agv.Error.* errors (NotLoggedIn, CliFailed, CliNotFound, Timeout,
   UnexpectedOutput, InvalidArgument, Busy, NotAuthorized, NotFound, NotSupported, SystemFailed).
@@ -99,6 +100,16 @@
 
     <!-- False when the kernel lacks cgroup v2 or nftables socket matching -->
     <property name="AppExclusionsSupported" type="b" access="read"/>
+
+    <!--
+      "bypass": the listed apps skip the VPN (default).
+      "vpn-only": only the listed apps use the VPN; everything else goes straight out. Affects the
+      whole system, so changing it needs org.agv.daemon.configure.
+    -->
+    <property name="AppExclusionMode" type="s" access="read"/>
+    <method name="SetAppExclusionMode">
+      <arg name="mode" type="s" direction="in"/>
+    </method>
 
     <!--
       Rows: (id, rule) where rule keys are
