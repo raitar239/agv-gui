@@ -199,6 +199,9 @@ void InstalledApps::reload()
             if (seen.contains(file.fileName()))
                 continue;
             seen.insert(file.fileName());
+            // AGV itself only talks to agvd; excluding it would do nothing.
+            if (file.fileName() == QLatin1String("agv-gui.desktop"))
+                continue;
             if (auto app = parseDesktopFile(file.filePath(), locale, searchPath))
                 apps.append(*app);
         }

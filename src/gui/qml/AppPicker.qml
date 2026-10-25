@@ -1,6 +1,9 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Layouts
+// Overlay's attached properties come from the templates module; Qt 6.4 does not re-export them
+// through QtQuick.Controls.Basic.
+import QtQuick.Templates as T
 import Agv
 import Agv.Backend
 
@@ -17,7 +20,7 @@ Popup {
     modal: true
     focus: true
     padding: 0
-    anchors.centerIn: Overlay.overlay
+    anchors.centerIn: T.Overlay.overlay
     width: Math.min(parent.width - 24, 520)
     height: Math.min(parent.height - 24, 620)
 
@@ -27,7 +30,7 @@ Popup {
         search.forceActiveFocus()
     }
 
-    Overlay.modal: Rectangle { color: Qt.rgba(0, 0, 0, 0.45) }
+    T.Overlay.modal: Rectangle { color: Qt.rgba(0, 0, 0, 0.45) }
 
     background: Rectangle {
         color: Theme.bg

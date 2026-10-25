@@ -53,7 +53,7 @@ if(AGV_BUILD_GUI)
         COMMAND agv-gui --screenshot ${CMAKE_CURRENT_BINARY_DIR}/gui_reopen.png --size 700x500)
     set_tests_properties(gui_reopen PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_FORCE_STDERR_LOGGING=1;AGV_SCREENSHOT_REOPEN=1;AGV_SCREENSHOT_DELAY=1500;AGV_SESSION_BUS=1"
-        FAIL_REGULAR_EXPRESSION "TypeError|ReferenceError|Unable to assign|is not available|registerSingletonInstance|cannot load"
+        FAIL_REGULAR_EXPRESSION "TypeError|ReferenceError|Unable to assign|is not available|registerSingletonInstance|cannot load|did not free"
         TIMEOUT 30)
 
     # Same at a fractional scale, where the software renderer behaves differently.
@@ -61,6 +61,6 @@ if(AGV_BUILD_GUI)
         COMMAND agv-gui --screenshot ${CMAKE_CURRENT_BINARY_DIR}/gui_fractional_scale.png --size 700x500)
     set_tests_properties(gui_fractional_scale PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_SCALE_FACTOR=1.3333334;QT_FORCE_STDERR_LOGGING=1;AGV_SCREENSHOT_DELAY=1500;AGV_SESSION_BUS=1"
-        FAIL_REGULAR_EXPRESSION "TypeError|ReferenceError|Unable to assign|is not available|registerSingletonInstance|cannot load"
+        FAIL_REGULAR_EXPRESSION "TypeError|ReferenceError|Unable to assign|is not available|registerSingletonInstance|cannot load|did not free"
         TIMEOUT 30)
 endif()

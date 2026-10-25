@@ -51,9 +51,17 @@ void WindowController::screenshot(const QString &path, const QSize &size, int pa
     // Development: open and close a window first, as the tray does, to check that a second
     // window in the same process still works.
     if (qEnvironmentVariableIntValue("AGV_SCREENSHOT_REOPEN")) {
-        create();
-        destroy();
-        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+        m_quitOnClose = false; // the shot ends the program itself
+        if (QQuickWindow *first = create()) {
+            first->show();
+            first->close(); // the same path as closing it from the window manager
+            for (int i = 0; i < 10 && m_engine; ++i) {
+                QCoreApplication::processEvents();
+                QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+            }
+            if (m_engine)
+                qCritical("agv-gui: closing the window did not free its scene");
+        }
     }
     QQuickWindow *window = create();
     if (!window) {
@@ -86,7 +94,11 @@ QQuickWindow *WindowController::create()
     }
 
     m_window = qobject_cast<QQuickWindow *>(m_engine->rootObjects().first());
-    connect(m_window, &QQuickWindow::closing, this, [this] {
+    // A closed window gets hidden. (Not QQuickWindow::closing: its QQuickCloseEvent argument is an
+    // incomplete type in Qt 6.4 headers, which breaks the functor connect there.)
+    connect(m_window, &QWindow::visibleChanged, this, [this](bool visible) {
+        if (visible)
+            return;
         // Let the close finish, then free the whole scene.
         QTimer::singleShot(0, this, [this] {
             destroy();
