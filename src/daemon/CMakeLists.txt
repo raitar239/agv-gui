@@ -4,6 +4,8 @@ add_library(agvd-core STATIC
     clirunner.cpp
     vpnservice.h
     vpnservice.cpp
+    hostsystem.h
+    hostsystem.cpp
     polkitauthorizer.h
     polkitauthorizer.cpp
     daemonservice.h

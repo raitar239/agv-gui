@@ -2,9 +2,14 @@
 
 #include "clirunner.h"
 
+#include <QFileInfo>
 #include <QProcess>
 #include <QRegularExpression>
 #include <QTimer>
+
+#include <algorithm>
+#include <cerrno>
+#include <csignal>
 
 namespace agv {
 
@@ -15,6 +20,8 @@ constexpr int ConnectTimeoutMs = 90'000;
 constexpr int DisconnectTimeoutMs = 30'000;
 constexpr int LocationsTimeoutMs = 30'000;
 constexpr int LoginTimeoutMs = 30 * 60'000; // the device-code link lives ~30 minutes
+constexpr int ExternalStopPollMs = 250;
+constexpr int ExternalStopTimeoutMs = 10'000;
 
 QString lastMeaningfulLine(const QString &output)
 {
@@ -115,9 +122,87 @@ void VpnService::refreshStatus(Done done)
             }
         }
 
+        updateExternalVpns();
         schedulePoll();
         if (done)
             done(error);
+    });
+}
+
+void VpnService::updateExternalVpns()
+{
+    // While our own VPN is up (or changing), another instance cannot be running alongside it.
+    QList<ExternalVpn> found;
+    if (m_state != State::Connected && m_state != State::Connecting && m_state != State::Disconnecting)
+        found = findExternalVpns(m_cli->home(), m_procDir);
+
+    if (found != m_externalVpns) {
+        m_externalVpns = found;
+        emit statusChanged();
+    }
+}
+
+void VpnService::stopExternalVpns(Done done)
+{
+    if (m_transitioning) {
+        done({errors::Busy, QStringLiteral("Another connection change is in progress")});
+        return;
+    }
+
+    QList<pid_t> pending;
+    for (const ExternalVpn &vpn : findExternalVpns(m_cli->home(), m_procDir)) {
+        // Re-check right before signalling: the PID must still be the VPN we found.
+        if (!isVpnProcess(vpn.pid, m_procDir))
+            continue;
+        if (::kill(vpn.pid, SIGTERM) != 0) {
+            done({errors::NotAuthorized,
+                  QStringLiteral("Cannot stop process %1: %2").arg(vpn.pid).arg(qt_error_string(errno))});
+            return;
+        }
+        pending.append(vpn.pid);
+    }
+
+    m_transitioning = true;
+    auto *timer = new QTimer(this);
+    auto waitedMs = std::make_shared<int>(0);
+    connect(timer, &QTimer::timeout, this, [this, timer, pending, waitedMs, done] {
+        *waitedMs += ExternalStopPollMs;
+        const bool alive = std::any_of(pending.cbegin(), pending.cend(),
+                                       [this](pid_t pid) { return isVpnProcess(pid, m_procDir); });
+        if (alive && *waitedMs < ExternalStopTimeoutMs)
+            return;
+
+        timer->deleteLater();
+        m_transitioning = false;
+        const Error error = alive
+            ? Error{errors::Timeout, QStringLiteral("The external VPN did not stop in time")}
+            : Error{};
+        refreshStatus([done, error](const Error &) { done(error); });
+    });
+    timer->start(ExternalStopPollMs);
+}
+
+void VpnService::importLogin(const QString &fromHome, uid_t ownerUid, Done done)
+{
+    if (m_transitioning || m_state == State::Connected) {
+        done({errors::Busy, QStringLiteral("Disconnect before importing a login")});
+        return;
+    }
+    if (!QFileInfo::exists(cliConfigPath(fromHome))) {
+        done({errors::NotFound, QStringLiteral("No AdGuard VPN CLI login found in %1").arg(fromHome)});
+        return;
+    }
+
+    const QString reason = importCliConfig(fromHome, ownerUid, m_cli->home());
+    if (!reason.isEmpty()) {
+        done({errors::InvalidArgument, reason});
+        return;
+    }
+
+    emit siteExclusionsChanged();
+    refreshStatus([this, done](const Error &error) {
+        refreshSiteExclusionMode();
+        done(error);
     });
 }
 

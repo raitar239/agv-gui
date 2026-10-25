@@ -1,6 +1,7 @@
 #pragma once
 
 #include "cliparser.h"
+#include "hostsystem.h"
 
 #include <QObject>
 #include <QPointer>
@@ -27,6 +28,7 @@ inline const QString InvalidArgument = QStringLiteral("org.agv.Error.InvalidArgu
 inline const QString Busy = QStringLiteral("org.agv.Error.Busy");
 inline const QString NotAuthorized = QStringLiteral("org.agv.Error.NotAuthorized");
 inline const QString NotImplemented = QStringLiteral("org.agv.Error.NotImplemented");
+inline const QString NotFound = QStringLiteral("org.agv.Error.NotFound");
 } // namespace errors
 
 struct Error {
@@ -59,6 +61,11 @@ public:
     QString lastError() const { return m_lastError; }
     bool loggedIn() const { return m_state != State::NotLoggedIn && m_state != State::Unknown; }
     QString siteExclusionMode() const { return m_siteExclusionMode; }
+    // VPN instances started outside the daemon; only looked for while we are not connected.
+    QList<ExternalVpn> externalVpns() const { return m_externalVpns; }
+
+    // For tests: where to look for processes (default /proc).
+    void setProcDir(const QString &procDir) { m_procDir = procDir; }
 
     // Reads the initial state and starts polling.
     void start();
@@ -85,12 +92,17 @@ public:
     void cancelLogin();
     void logout(Done done);
 
+    // Copies the CLI login and settings of another HOME (the calling user's) into ours.
+    void importLogin(const QString &fromHome, uid_t ownerUid, Done done);
+    // Asks external VPN instances to stop (SIGTERM) and waits until they are gone.
+    void stopExternalVpns(Done done);
+
     // Validation helpers, public for tests.
     static bool isValidExclusion(const QString &item);
     static bool isValidConfig(const QString &key, const QString &value);
 
 signals:
-    // State, Location, Mode, TunDevice, LastError or LoggedIn changed.
+    // State, Location, Mode, TunDevice, LastError, LoggedIn or the external VPN list changed.
     void statusChanged();
     void siteExclusionsChanged();
     void loginUrlReady(const QString &url);
@@ -101,6 +113,7 @@ private:
     void setStatus(State state, const QString &location = {}, const QString &mode = {},
                    const QString &tunDevice = {});
     void setLastError(const QString &message);
+    void updateExternalVpns();
     void refreshSiteExclusionMode();
     void schedulePoll();
     Error errorFor(const QStringList &args, int exitCode, const QString &output, bool timedOut,
@@ -119,6 +132,8 @@ private:
     QString m_tunDevice;
     QString m_lastError;
     QString m_siteExclusionMode;
+    QString m_procDir = QStringLiteral("/proc");
+    QList<ExternalVpn> m_externalVpns;
 };
 
 } // namespace agv

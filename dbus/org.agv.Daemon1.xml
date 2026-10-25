@@ -8,10 +8,10 @@
   Authorization (polkit, see data/polkit/org.agv.daemon.policy):
     reads                                  - anyone allowed by the D-Bus policy
     org.agv.daemon.control                 - connect, disconnect, exclusions, license
-    org.agv.daemon.configure               - settings, login, logout
+    org.agv.daemon.configure               - settings, login, logout, import, stopping external VPNs
 
   Failed calls return org.agv.Error.* errors (NotLoggedIn, CliFailed, CliNotFound, Timeout,
-  UnexpectedOutput, InvalidArgument, Busy, NotAuthorized, NotImplemented).
+  UnexpectedOutput, InvalidArgument, Busy, NotAuthorized, NotImplemented, NotFound).
 
   State changes are announced through org.freedesktop.DBus.Properties.PropertiesChanged.
 -->
@@ -38,6 +38,16 @@
     <method name="ConnectFastest"/>
     <method name="Disconnect"/>
 
+    <!--
+      VPN instances started outside agvd (another HOME, e.g. a user's own adguardvpn-cli):
+      (pid, uid, home). Only reported while agvd itself is not connected; the GUI should offer
+      StopExternalVpns before Connect.
+    -->
+    <property name="ExternalVpns" type="a(uus)" access="read">
+      <annotation name="org.qtproject.QtDBus.QtTypeName" value="AgvExternalVpnList"/>
+    </property>
+    <method name="StopExternalVpns"/>
+
     <method name="ListLocations">
       <arg name="locations" type="a(sssi)" direction="out"/>
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="AgvLocationList"/>
@@ -51,6 +61,8 @@
     <method name="Login"/>
     <method name="CancelLogin"/>
     <method name="Logout"/>
+    <!-- Copies the caller's own adguardvpn-cli login and settings into agvd's data directory -->
+    <method name="ImportLogin"/>
     <signal name="LoginUrl">
       <arg name="url" type="s"/>
     </signal>

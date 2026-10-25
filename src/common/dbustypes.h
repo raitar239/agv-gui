@@ -41,6 +41,16 @@ struct AgvAppTraffic {
 };
 using AgvAppTrafficList = QList<AgvAppTraffic>;
 
+// (uus): pid, uid, home ("" when unknown)
+struct AgvExternalVpn {
+    uint pid = 0;
+    uint uid = 0;
+    QString home;
+
+    bool operator==(const AgvExternalVpn &) const = default;
+};
+using AgvExternalVpnList = QList<AgvExternalVpn>;
+
 QDBusArgument &operator<<(QDBusArgument &arg, const AgvLocation &value);
 const QDBusArgument &operator>>(const QDBusArgument &arg, AgvLocation &value);
 QDBusArgument &operator<<(QDBusArgument &arg, const AgvConfigValue &value);
@@ -49,11 +59,14 @@ QDBusArgument &operator<<(QDBusArgument &arg, const AgvAppExclusion &value);
 const QDBusArgument &operator>>(const QDBusArgument &arg, AgvAppExclusion &value);
 QDBusArgument &operator<<(QDBusArgument &arg, const AgvAppTraffic &value);
 const QDBusArgument &operator>>(const QDBusArgument &arg, AgvAppTraffic &value);
+QDBusArgument &operator<<(QDBusArgument &arg, const AgvExternalVpn &value);
+const QDBusArgument &operator>>(const QDBusArgument &arg, AgvExternalVpn &value);
 
 Q_DECLARE_METATYPE(AgvLocation)
 Q_DECLARE_METATYPE(AgvConfigValue)
 Q_DECLARE_METATYPE(AgvAppExclusion)
 Q_DECLARE_METATYPE(AgvAppTraffic)
+Q_DECLARE_METATYPE(AgvExternalVpn)
 
 namespace agv {
 

@@ -3,7 +3,12 @@
 #include "polkitauthorizer.h"
 #include "vpnservice.h"
 
+#include <QDBusConnectionInterface>
 #include <QDBusMessage>
+#include <QDBusReply>
+#include <QFile>
+
+#include <pwd.h>
 
 namespace agv {
 
@@ -12,6 +17,7 @@ namespace {
 const QStringList StatusProperties{
     QStringLiteral("State"),    QStringLiteral("Location"),  QStringLiteral("Mode"),
     QStringLiteral("TunDevice"), QStringLiteral("LastError"), QStringLiteral("LoggedIn"),
+    QStringLiteral("ExternalVpns"),
 };
 
 } // namespace
@@ -40,6 +46,14 @@ QString DaemonService::lastError() const { return m_vpn->lastError(); }
 bool DaemonService::loggedIn() const { return m_vpn->loggedIn(); }
 QString DaemonService::siteExclusionMode() const { return m_vpn->siteExclusionMode(); }
 
+AgvExternalVpnList DaemonService::externalVpns() const
+{
+    AgvExternalVpnList result;
+    for (const ExternalVpn &vpn : m_vpn->externalVpns())
+        result.append({uint(vpn.pid), uint(vpn.uid), vpn.home});
+    return result;
+}
+
 void DaemonService::Connect(const QString &location)
 {
     authorized(ActionControl, [this, location](const QDBusMessage &message) {
@@ -58,6 +72,13 @@ void DaemonService::Disconnect()
 {
     authorized(ActionControl, [this](const QDBusMessage &message) {
         m_vpn->disconnectVpn([this, message](const Error &error) { replyDone(message, error); });
+    });
+}
+
+void DaemonService::StopExternalVpns()
+{
+    authorized(ActionConfigure, [this](const QDBusMessage &message) {
+        m_vpn->stopExternalVpns([this, message](const Error &error) { replyDone(message, error); });
     });
 }
 
@@ -98,6 +119,21 @@ void DaemonService::Logout()
 {
     authorized(ActionConfigure, [this](const QDBusMessage &message) {
         m_vpn->logout([this, message](const Error &error) { replyDone(message, error); });
+    });
+}
+
+void DaemonService::ImportLogin()
+{
+    authorized(ActionConfigure, [this](const QDBusMessage &message) {
+        // Import only from the caller's own home, never from a path the client names.
+        const QDBusReply<uint> uid = m_bus.interface()->serviceUid(message.service());
+        const passwd *user = uid.isValid() ? getpwuid(uid.value()) : nullptr;
+        if (!user || !user->pw_dir) {
+            replyError(message, {errors::NotFound, QStringLiteral("Cannot determine the caller's home")});
+            return;
+        }
+        m_vpn->importLogin(QFile::decodeName(user->pw_dir), uid.value(),
+                           [this, message](const Error &error) { replyDone(message, error); });
     });
 }
 

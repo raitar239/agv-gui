@@ -35,4 +35,10 @@ busctl --user call org.agv.Daemon1 /org/agv/Daemon org.agv.Daemon1 ListLocations
 busctl --user get-property org.agv.Daemon1 /org/agv/Daemon org.agv.Daemon1 State
 ```
 
-Connecting needs root, so `Connect` only works with the installed system service.
+Connecting needs root, so `Connect` only works with the installed system service. To install a
+development build (to `/usr/local` and `/etc`) and remove it again:
+
+```sh
+sudo scripts/dev-install.sh
+sudo scripts/dev-install.sh --uninstall
+```

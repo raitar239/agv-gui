@@ -200,8 +200,11 @@ cgroup v2 → nftables `socket cgroupv2` → `meta mark` → `ip rule fwmark` �
    adaptor, `PolkitAuthorizer`, `agvd` (`--session` для разработки без root). ✓ systemd unit,
    политика D-Bus, D-Bus activation, polkit policy. ✓ Тесты: парсер на образцах + сервис на
    поддельном CLI (`tests/fake-adguardvpn-cli`). Проверено на сессионной шине с настоящим CLI.
-   Осталось: обнаружение чужого экземпляра VPN, импорт входа из `~/.local/share/adguardvpn-cli`,
-   проверка на системной шине от root (connect/disconnect, polkit).
+   ✓ Чужой экземпляр VPN: свойство `ExternalVpns` (скан `/proc`, другой HOME), `StopExternalVpns`
+   (SIGTERM, ждём до 10 с). ✓ `ImportLogin`: копирует `adguardvpn-cli.conf` вызывающего (в нём
+   зашифрованы вход, исключения и настройки; копия в другом HOME работает), только обычный файл
+   владельца, без симлинков, 0600. ✓ `scripts/dev-install.sh` — установка отладочной сборки.
+   Осталось: проверка на системной шине от root (connect/disconnect, polkit).
 3. Движок маршрутизации: SCRIPT-режим, nftables, cgroup, agv-run.
 4. GUI MVP: главная, локации, сайты-исключения, трей, адаптивная сетка.
 5. Исключения приложений: выбор из .desktop, exec watcher, переписывание .desktop. Проверить

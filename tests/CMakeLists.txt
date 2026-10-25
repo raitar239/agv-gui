@@ -11,3 +11,8 @@ target_compile_definitions(tst_vpnservice PRIVATE
     AGV_FIXTURES_DIR="${fixtures_dir}"
     AGV_FAKE_CLI="${CMAKE_CURRENT_SOURCE_DIR}/fake-adguardvpn-cli")
 add_test(NAME vpnservice COMMAND tst_vpnservice)
+
+add_executable(tst_hostsystem tst_hostsystem.cpp)
+target_link_libraries(tst_hostsystem PRIVATE agvd-core Qt6::Test)
+target_compile_definitions(tst_hostsystem PRIVATE AGV_FAKE_CLI="${CMAKE_CURRENT_SOURCE_DIR}/fake-adguardvpn-cli")
+add_test(NAME hostsystem COMMAND tst_hostsystem)
