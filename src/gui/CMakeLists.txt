@@ -48,6 +48,8 @@ qt_add_qml_module(agv-gui
         qml/Segmented.qml
         qml/Toast.qml
         qml/Toggle.qml
+        qml/SettingRow.qml
+        qml/VpnSettingsCard.qml
         qml/Dropdown.qml
         qml/AppPicker.qml
         qml/HomePage.qml

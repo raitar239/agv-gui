@@ -41,6 +41,10 @@ class DaemonClient : public QObject
     // "bypass" or "vpn-only"
     Q_PROPERTY(QString appExclusionMode READ appExclusionMode NOTIFY statusChanged)
     Q_PROPERTY(bool startAtBoot READ startAtBoot NOTIFY statusChanged)
+    // The CLI configuration: { "Mode": { value, isDefault }, "Protocol": …, … } keyed by CLI label.
+    Q_PROPERTY(QVariantMap config READ config NOTIFY configChanged)
+    // A setting changed while connected; it takes effect after reconnecting.
+    Q_PROPERTY(bool needsReconnect READ needsReconnect NOTIFY configChanged)
     Q_PROPERTY(bool autoConnect READ autoConnect NOTIFY statusChanged)
     // Bytes through the tunnel since it came up; refreshed by refreshTunnelTraffic().
     Q_PROPERTY(double tunnelBytesIn READ tunnelBytesIn NOTIFY tunnelTrafficChanged)
@@ -79,6 +83,8 @@ public:
     }
     bool startAtBoot() const { return m_props.value(QStringLiteral("StartAtBoot")).toBool(); }
     bool autoConnect() const { return m_props.value(QStringLiteral("AutoConnect")).toBool(); }
+    QVariantMap config() const { return m_config; }
+    bool needsReconnect() const { return m_needsReconnect && connected(); }
     double tunnelBytesIn() const { return m_tunnelIn; }
     double tunnelBytesOut() const { return m_tunnelOut; }
     QVariantMap license() const { return m_license; }
@@ -114,6 +120,11 @@ public:
     Q_INVOKABLE bool isAppExcluded(const QString &desktopFile, const QString &exe) const;
 
     Q_INVOKABLE void setAppExclusionMode(const QString &mode);
+    Q_INVOKABLE void refreshConfig();
+    // key is a "config set-*" name without the prefix: mode, protocol, socks-port, dns, …
+    Q_INVOKABLE void setConfig(const QString &key, const QString &value);
+    // Disconnects and connects to the same location, so new settings apply.
+    Q_INVOKABLE void reconnect();
     Q_INVOKABLE void setStartAtBoot(bool enabled);
     Q_INVOKABLE void setAutoConnect(bool enabled);
     // Reads the tunnel interface counters from sysfs (cheap; called by the UI while visible).
@@ -133,6 +144,7 @@ signals:
     void licenseChanged();
     void appsChanged();
     void tunnelTrafficChanged();
+    void configChanged();
     void loginPendingChanged();
     void errorOccurred(const QString &message);
     void info(const QString &message);
@@ -171,6 +183,8 @@ private:
     QHash<QString, QPair<quint64, quint64>> m_traffic;
     QVariantList m_apps;
     bool m_appsLoaded = false;
+    QVariantMap m_config;
+    bool m_needsReconnect = false;
     double m_tunnelIn = 0;
     double m_tunnelOut = 0;
     bool m_loginPending = false;

@@ -13,6 +13,11 @@ Item {
 
     readonly property bool working: Daemon.busy || Daemon.transitioning
     readonly property bool vpnOnly: Daemon.appExclusionMode === "vpn-only"
+    readonly property bool socks: Daemon.mode === "SOCKS"
+    readonly property string proxy: {
+        const host = Daemon.config["SOCKS host"], port = Daemon.config["SOCKS port"]
+        return (host ? host.value : "127.0.0.1") + ":" + (port ? port.value : "1080")
+    }
     readonly property int vpnApps: Daemon.apps.filter(function (app) { return app.enabled }).length
     readonly property string currentCity: prettyCity(Daemon.location)
     // Reading total makes these re-run once the location list arrives.
@@ -81,7 +86,7 @@ Item {
                 Layout.fillWidth: true
                 Text {
                     text: page.working ? (Daemon.state === "disconnecting" ? qsTr("Disconnecting…") : qsTr("Connecting…"))
-                                       : Daemon.connected ? (page.vpnOnly ? qsTr("Connected") : qsTr("Protected"))
+                                       : Daemon.connected ? (page.vpnOnly || page.socks ? qsTr("Connected") : qsTr("Protected"))
                                                           : qsTr("Not protected")
                     color: Daemon.connected && !page.working ? Theme.accent : Theme.text
                     font.pixelSize: Theme.fontHeadline
@@ -93,6 +98,8 @@ Item {
                     text: {
                         if (Daemon.state === "error" && Daemon.lastError !== "")
                             return Daemon.lastError
+                        if (Daemon.connected && page.socks)
+                            return qsTr("SOCKS5 proxy %1 goes through %2").arg(page.proxy).arg(page.currentPlace)
                         if (Daemon.connected && page.vpnOnly)
                             return qsTr("Only %n app(s) use %1", "", page.vpnApps).arg(page.currentPlace)
                         if (Daemon.connected)

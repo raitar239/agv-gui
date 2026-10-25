@@ -157,6 +157,15 @@ Item {
             Layout.fillHeight: true
 
             Banner {
+                visible: Daemon.appExclusionsSupported && Daemon.config["Mode"] !== undefined
+                         && Daemon.config["Mode"].value === "socks"
+                kind: "warning"
+                title: qsTr("SOCKS5 mode: app exclusions do not apply")
+                text: qsTr("Only programs set to use the proxy go through the VPN, everything else goes direct. Switch to TUN in Settings to use the list below.")
+                Layout.fillWidth: true
+            }
+
+            Banner {
                 visible: !Daemon.appExclusionsSupported
                 kind: "warning"
                 title: qsTr("App exclusions are not available")

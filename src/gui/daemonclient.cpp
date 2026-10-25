@@ -231,6 +231,44 @@ void DaemonClient::setAppExclusionMode(const QString &mode)
     call(QStringLiteral("SetAppExclusionMode"), {mode});
 }
 
+void DaemonClient::refreshConfig()
+{
+    call(QStringLiteral("GetConfig"), {}, [this](const QDBusMessage &reply) {
+        const auto config = qdbus_cast<AgvConfigMap>(reply.arguments().value(0));
+        m_config.clear();
+        for (auto it = config.cbegin(); it != config.cend(); ++it) {
+            m_config.insert(it.key(), QVariantMap{{QStringLiteral("value"), it->value},
+                                                  {QStringLiteral("isDefault"), it->isDefault}});
+        }
+        emit configChanged();
+    });
+}
+
+void DaemonClient::setConfig(const QString &key, const QString &value)
+{
+    call(QStringLiteral("SetConfig"), {key, value}, [this](const QDBusMessage &) {
+        if (connected()) {
+            m_needsReconnect = true;
+            emit info(tr("Saved. Reconnect to apply it."));
+        } else {
+            emit info(tr("Saved. Applies on the next connection."));
+        }
+        refreshConfig();
+    });
+}
+
+void DaemonClient::reconnect()
+{
+    if (!connected() || busy())
+        return;
+    const QString location = this->location();
+    call(QStringLiteral("Disconnect"), {}, [this, location](const QDBusMessage &) {
+        m_needsReconnect = false;
+        emit configChanged();
+        connectTo(location);
+    }, true);
+}
+
 void DaemonClient::setStartAtBoot(bool enabled)
 {
     call(QStringLiteral("SetStartAtBoot"), {enabled});
@@ -417,6 +455,7 @@ void DaemonClient::loadAll()
         applyProperties(qdbus_cast<QVariantMap>(reply.arguments().value(0)));
         refreshSiteExclusions();
         refreshApps();
+        refreshConfig();
         if (loggedIn()) {
             refreshLocations();
             refreshLicense();
@@ -434,6 +473,10 @@ void DaemonClient::applyProperties(const QVariantMap &props)
         } else {
             m_props.insert(it.key(), it.value());
         }
+    }
+    if (!connected() && !transitioning() && m_needsReconnect) {
+        m_needsReconnect = false; // the next connection uses the new settings anyway
+        emit configChanged();
     }
     emit statusChanged();
     if (props.contains(QStringLiteral("SiteExclusionMode")))
