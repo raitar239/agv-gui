@@ -39,6 +39,7 @@ qt_add_qml_module(agv-gui
         qml/Banner.qml
         qml/BottomBar.qml
         qml/Card.qml
+        qml/Circle.qml
         qml/ConnectButton.qml
         qml/FlatButton.qml
         qml/InputField.qml

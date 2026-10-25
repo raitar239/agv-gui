@@ -10,35 +10,36 @@ Item {
     property bool working: false
     property bool enabledState: true
     property real diameter: 180
+    // Whole, even pixel sizes: the software renderer clips circles with fractional sizes.
+    readonly property int outer: 2 * Math.round(diameter / 2)
+    readonly property int inner: 2 * Math.round(diameter * 0.39)
     signal clicked()
 
-    implicitWidth: diameter
-    implicitHeight: diameter
+    implicitWidth: outer
+    implicitHeight: outer
 
     readonly property color ringColor: working ? Theme.warning : connected ? Theme.accent : Theme.idle
 
     // Soft halo when connected.
-    Rectangle {
+    Circle {
         anchors.centerIn: parent
-        width: root.diameter
+        width: root.outer
         height: width
-        radius: width / 2
         color: Theme.accentSoft
         opacity: root.connected && !root.working ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: Theme.animNormal } }
     }
 
-    Rectangle {
+    Circle {
         id: face
         anchors.centerIn: parent
-        width: root.diameter * 0.78
+        width: root.inner
         height: width
-        radius: width / 2
         color: root.connected && !root.working
                ? (mouse.pressed ? Theme.accentPressed : mouse.containsMouse ? Theme.accentHover : Theme.accent)
                : (mouse.pressed ? Theme.surfacePressed : mouse.containsMouse ? Theme.surfaceHover : Theme.surface)
-        border.width: root.connected && !root.working ? 0 : Math.max(3, root.diameter * 0.022)
-        border.color: root.ringColor
+        borderWidth: root.connected && !root.working ? 0 : Math.max(3, root.diameter * 0.022)
+        borderColor: root.ringColor
         scale: mouse.pressed ? 0.97 : 1
         Behavior on color { ColorAnimation { duration: Theme.animNormal } }
         Behavior on scale { NumberAnimation { duration: Theme.animFast } }
@@ -58,7 +59,9 @@ Item {
         width: face.width
         height: face.height
         visible: root.working
-        layer.enabled: true
+        // Multisampling for smooth edges on the GPU. The software renderer antialiases paths
+        // itself and draws layers wrong at fractional scales (1.25, 1.33…), so no layer there.
+        layer.enabled: GraphicsInfo.api !== GraphicsInfo.Software
         layer.samples: 4
 
         ShapePath {

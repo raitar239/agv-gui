@@ -40,8 +40,9 @@ Item {
 
     Shape {
         anchors.fill: parent
-        // Multisampled layer for smooth edges; the path itself is scaled, not the pixels.
-        layer.enabled: true
+        // Multisampling for smooth edges on the GPU. The software renderer antialiases paths
+        // itself and draws layers wrong at fractional scales (1.25, 1.33…), so no layer there.
+        layer.enabled: GraphicsInfo.api !== GraphicsInfo.Software
         layer.samples: 4
 
         ShapePath {
