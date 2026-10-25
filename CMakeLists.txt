@@ -27,6 +27,8 @@ if(AGV_BUILD_GUI)
 endif()
 add_subdirectory(data)
 
+include(packaging/cpack.cmake)
+
 if(BUILD_TESTING)
     find_package(Qt6 6.4 REQUIRED COMPONENTS Test)
     add_subdirectory(tests)

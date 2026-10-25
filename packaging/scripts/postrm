@@ -1,0 +1,10 @@
+#!/bin/sh
+# Shared by .deb (args: remove | purge | upgrade ...) and .rpm ($1: 0 removal, 1 upgrade).
+set -e
+
+systemctl daemon-reload >/dev/null 2>&1 || true
+# The AdGuard VPN login and exclusions stay in /var/lib/agvd unless the package is purged.
+if [ "${1:-}" = purge ]; then
+    rm -rf /var/lib/agvd
+fi
+exit 0

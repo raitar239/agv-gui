@@ -57,12 +57,33 @@ std::optional<ProcessInfo> readProcess(pid_t pid, const QString &procDir)
             info.cgroup = QString::fromUtf8(line.mid(4));
     }
     for (const QByteArray &line : readFile(dir + QStringLiteral("/status")).split('\n')) {
-        if (line.startsWith("Uid:")) {
+        if (line.startsWith("Uid:"))
             info.uid = line.mid(4).simplified().split(' ').value(0).toLongLong();
+        else if (line.startsWith("PPid:"))
+            info.ppid = pid_t(line.mid(5).trimmed().toInt());
+    }
+    return info;
+}
+
+std::optional<Lineage> readLineage(pid_t pid, const QString &procDir)
+{
+    const QString dir = procDir + QLatin1Char('/') + QString::number(pid);
+    const QByteArray status = readFile(dir + QStringLiteral("/status"));
+    if (status.isEmpty())
+        return std::nullopt;
+
+    Lineage lineage;
+    for (const QByteArray &line : status.split('\n')) {
+        if (line.startsWith("PPid:")) {
+            lineage.ppid = pid_t(line.mid(5).trimmed().toInt());
             break;
         }
     }
-    return info;
+    for (const QByteArray &line : readFile(dir + QStringLiteral("/cgroup")).split('\n')) {
+        if (line.startsWith("0::/"))
+            lineage.cgroup = QString::fromUtf8(line.mid(4));
+    }
+    return lineage;
 }
 
 QList<pid_t> listProcesses(const QString &procDir)
@@ -87,6 +108,13 @@ void AppMatcher::setRules(const QList<AppRule> &rules, const QString &excludedBa
         m_rules.append({rule.id, rule.ownerUid, rule.exe, rule.exe.isEmpty() ? QString() : resolve(rule.exe),
                         rule.cmdlineMatch});
     }
+}
+
+QString AppMatcher::groupOf(const QString &cgroup) const
+{
+    if (m_base.isEmpty() || !cgroup.startsWith(m_base + QLatin1Char('/')))
+        return {};
+    return cgroup.mid(m_base.size() + 1).section(QLatin1Char('/'), 0, 0);
 }
 
 QString AppMatcher::match(const ProcessInfo &process) const

@@ -19,7 +19,15 @@ struct ProcessInfo {
     QStringList argv;    // /proc/<pid>/cmdline
     QString cgroup;      // unified-hierarchy path without the leading "/"
     qint64 uid = -1;     // real uid
+    pid_t ppid = 0;
 };
+
+// Just enough to follow a process's ancestry: its parent and its cgroup.
+struct Lineage {
+    pid_t ppid = 0;
+    QString cgroup;
+};
+std::optional<Lineage> readLineage(pid_t pid, const QString &procDir = QStringLiteral("/proc"));
 
 // Reads a process from procDir (normally /proc); nullopt for kernel threads and processes that
 // are gone or unreadable.
@@ -42,6 +50,9 @@ public:
 
     // The id of the first matching enabled rule, or an empty string.
     QString match(const ProcessInfo &process) const;
+
+    // The exclusion group (app id or "run") a cgroup path belongs to, or an empty string.
+    QString groupOf(const QString &cgroup) const;
 
 private:
     struct Compiled {

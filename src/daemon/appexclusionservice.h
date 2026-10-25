@@ -6,6 +6,7 @@
 #include "routingengine.h"
 
 #include <QObject>
+#include <QTimer>
 
 namespace agv {
 
@@ -44,6 +45,9 @@ public:
     void onExecuted(pid_t pid);
     // Looks through all running processes (at start, after rule changes, after lost events).
     void scanRunning();
+    // Brings back descendants of excluded processes that something moved to another cgroup:
+    // kitty, GNOME Terminal and Flatpak ask systemd to put each child into its own scope.
+    void reclaimDescendants();
 
     // For tests: where to read processes from (default /proc).
     void setProcDir(const QString &procDir) { m_procDir = procDir; }
@@ -54,6 +58,8 @@ signals:
 private:
     QStringList activeIds() const;
     void claim(pid_t pid);
+    QString inheritedGroup(pid_t ppid) const;
+    bool hasExcludedProcesses() const;
     // Applies the store's current rules; on failure restores `previous` in the store and system.
     Error commit(const QList<AppRule> &previous);
 
@@ -62,6 +68,7 @@ private:
     bool m_available = false;
     AppMatcher m_matcher;
     QString m_procDir = QStringLiteral("/proc");
+    QTimer *m_reclaim;
 };
 
 } // namespace agv

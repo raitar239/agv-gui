@@ -68,6 +68,8 @@ public:
     bool isSupported() const { return m_supported; }
     QString lastError() const { return m_lastError; }
     QString baseCgroup() const { return m_base; }
+    // Absolute path of an exclusion group's cgroup directory.
+    QString cgroupPath(const QString &appId) const { return cgroupDir(m_base + QLatin1Char('/') + appId); }
 
     // Makes the system match the given app ids (enabled exclusions): creates their cgroups,
     // loads the nftables table atomically, adds the ip rules and sysctls. Idempotent.

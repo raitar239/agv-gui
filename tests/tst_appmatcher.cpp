@@ -30,7 +30,7 @@ QByteArray readFile(const QString &path)
 // Adds a process to a fake /proc: cmdline, exe symlink, cgroup and status.
 void addProcess(const QString &proc, int pid, const QStringList &argv, const QString &exe,
                 const QString &cgroup = QStringLiteral("user.slice/user-1000.slice/session-1.scope"),
-                uid_t uid = 1000)
+                uid_t uid = 1000, int ppid = 1)
 {
     const QString dir = proc + QLatin1Char('/') + QString::number(pid);
     QByteArray cmdline;
@@ -38,7 +38,8 @@ void addProcess(const QString &proc, int pid, const QStringList &argv, const QSt
         cmdline += arg.toUtf8() + '\0';
     writeFile(dir + QStringLiteral("/cmdline"), cmdline);
     writeFile(dir + QStringLiteral("/cgroup"), "0::/" + cgroup.toUtf8() + '\n');
-    writeFile(dir + QStringLiteral("/status"), "Name:\tx\nUid:\t" + QByteArray::number(uid) + "\t0\t0\t0\n");
+    writeFile(dir + QStringLiteral("/status"), "Name:\tx\nPPid:\t" + QByteArray::number(ppid) + "\nUid:\t"
+                                                   + QByteArray::number(uid) + "\t0\t0\t0\n");
     if (!exe.isEmpty())
         QFile::link(exe, dir + QStringLiteral("/exe"));
 }
@@ -199,6 +200,74 @@ private slots:
         apps.onExecuted(201);
         apps.onExecuted(1);
         QCOMPARE(readFile(procs), QByteArray("200\n300\n"));
+    }
+
+    void lineageAndGroups()
+    {
+        QTemporaryDir proc;
+        addProcess(proc.path(), 40, {QStringLiteral("zsh")}, QStringLiteral("/usr/bin/zsh"),
+                   QStringLiteral("user.slice/kitty.slice/kitty-39"), 1000, 39);
+        const auto lineage = readLineage(40, proc.path());
+        QVERIFY(lineage);
+        QCOMPARE(lineage->ppid, pid_t(39));
+        QCOMPARE(lineage->cgroup, QStringLiteral("user.slice/kitty.slice/kitty-39"));
+        QVERIFY(!readLineage(41, proc.path()));
+
+        AppMatcher matcher;
+        matcher.setRules({}, Base);
+        QCOMPARE(matcher.groupOf(Base + QStringLiteral("/app-1/sub")), QStringLiteral("app-1"));
+        QCOMPARE(matcher.groupOf(Base + QStringLiteral("/run")), QStringLiteral("run"));
+        QCOMPARE(matcher.groupOf(Base), QString());
+        QCOMPARE(matcher.groupOf(QStringLiteral("user.slice/x")), QString());
+    }
+
+    void descendantsStayExcluded()
+    {
+        // kitty is excluded; it asks systemd to put each shell into its own scope.
+        QTemporaryDir dir;
+        RoutingPaths paths;
+        paths.cgroupRoot = dir.path() + QStringLiteral("/cgroup");
+        paths.procSys = dir.path() + QStringLiteral("/sys");
+        paths.selfCgroup = dir.path() + QStringLiteral("/self-cgroup");
+        writeFile(paths.cgroupRoot + QStringLiteral("/cgroup.controllers"), "memory\n");
+        writeFile(paths.selfCgroup, "0::/system.slice/agvd.service\n");
+        const QString proc = dir.path() + QStringLiteral("/proc");
+        const uid_t me = getuid();
+
+        OkCommands commands;
+        RoutingEngine engine(&commands, paths);
+        AppStore store(dir.path() + QStringLiteral("/apps.json"));
+        AppExclusionService apps(&store, &engine);
+        apps.setProcDir(proc);
+        apps.start();
+
+        QString id;
+        QVERIFY(apps.add({{QStringLiteral("name"), QStringLiteral("kitty")},
+                          {QStringLiteral("exe"), QStringLiteral("/usr/bin/kitty")}}, me, &id).isOk());
+        const QString group = Base + QLatin1Char('/') + id;
+        const QString procs = paths.cgroupRoot + QLatin1Char('/') + group + QStringLiteral("/cgroup.procs");
+
+        // kitty itself, already moved; its shell starts in kitty's own scope.
+        addProcess(proc, 500, {QStringLiteral("kitty")}, QStringLiteral("/usr/bin/kitty"), group, me, 1);
+        writeFile(procs, "500\n");
+        addProcess(proc, 501, {QStringLiteral("-zsh")}, QStringLiteral("/usr/bin/zsh"),
+                   QStringLiteral("user.slice/user-1000.slice/user@1000.service/kitty.slice/kitty-500"), me, 500);
+        // A grandchild started from the shell, and an unrelated process.
+        addProcess(proc, 502, {QStringLiteral("curl")}, QStringLiteral("/usr/bin/curl"),
+                   QStringLiteral("user.slice/user-1000.slice/user@1000.service/kitty.slice/kitty-500"), me, 501);
+        addProcess(proc, 600, {QStringLiteral("vim")}, QStringLiteral("/usr/bin/vim"),
+                   QStringLiteral("user.slice/u.scope"), me, 1);
+
+        apps.onExecuted(501);
+        QCOMPARE(readFile(procs), QByteArray("500\n501\n"));
+        // What the kernel would now report for the moved shell.
+        writeFile(proc + QStringLiteral("/501/cgroup"), "0::/" + group.toUtf8() + '\n');
+
+        // The periodic pass finds the rest; the unrelated process stays where it is.
+        apps.reclaimDescendants();
+        QCOMPARE(readFile(procs), QByteArray("500\n501\n502\n"));
+        apps.onExecuted(600);
+        QVERIFY(!readFile(procs).contains("600"));
     }
 
     void usersOnlySeeTheirOwnRules()

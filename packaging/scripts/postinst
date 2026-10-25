@@ -1,0 +1,19 @@
+#!/bin/sh
+# Shared by .deb (args: configure [old-version]) and .rpm ($1: 1 install, 2 upgrade).
+set -e
+
+systemctl daemon-reload >/dev/null 2>&1 || true
+# Pick up the D-Bus policy for org.agv.Daemon1.
+systemctl reload dbus.service >/dev/null 2>&1 || systemctl reload dbus-broker.service >/dev/null 2>&1 || true
+
+upgrade=false
+[ "${1:-}" = configure ] && [ -n "${2:-}" ] && upgrade=true
+[ "${1:-}" = 2 ] && upgrade=true
+
+if $upgrade; then
+    # Restarting keeps the VPN and excluded apps running (KillMode=process).
+    systemctl try-restart agvd.service >/dev/null 2>&1 || true
+else
+    echo "AGV: start the service now and at boot with:  sudo systemctl enable --now agvd"
+fi
+exit 0

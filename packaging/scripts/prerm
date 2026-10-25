@@ -1,0 +1,10 @@
+#!/bin/sh
+# Shared by .deb (args: remove | upgrade ...) and .rpm ($1: 0 removal, 1 upgrade).
+set -e
+
+if [ "${1:-}" = remove ] || [ "${1:-}" = 0 ]; then
+    systemctl disable --now agvd.service >/dev/null 2>&1 || true
+    # Routing state (nftables table, ip rules, cgroups) outlives the daemon on purpose.
+    /usr/libexec/agv-gui/agvd --cleanup --data-dir /var/lib/agvd >/dev/null 2>&1 || true
+fi
+exit 0
