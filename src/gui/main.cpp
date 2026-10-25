@@ -14,6 +14,8 @@
 #include <QIcon>
 #include <QSettings>
 #include <QQmlEngine>
+#include <QQuickWindow>
+#include <QSGRendererInterface>
 #include <QQuickStyle>
 
 using namespace agv;
@@ -53,6 +55,13 @@ void registerShared(const char *name, T *instance)
 
 int main(int argc, char *argv[])
 {
+    // Software rendering unless the user asks for another backend (QT_QUICK_BACKEND, e.g. "rhi"
+    // for the GPU). The flat UI looks the same, and it keeps the OpenGL/Vulkan driver (Mesa: LLVM
+    // and gallium, ~90 MB) out of the process: with the window open ~94 MB RSS instead of ~183 MB.
+    // Worth revisiting if the UI grows heavy effects or many full-window animations.
+    if (qEnvironmentVariableIsEmpty("QT_QUICK_BACKEND"))
+        QQuickWindow::setGraphicsApi(QSGRendererInterface::Software);
+
     // QApplication only for the tray (QSystemTrayIcon and its menu are widgets).
     QApplication app(argc, argv);
     QCoreApplication::setOrganizationName(QStringLiteral("agv-gui"));

@@ -219,6 +219,15 @@ cgroup v2 → nftables `socket cgroupv2` → `meta mark` → `ip rule fwmark` �
 - Экраны через `Loader`/`StackView` по требованию; списки — `QAbstractListModel` на C++.
 - Демон без QML.
 
+- **Отрисовка GUI — программная по умолчанию** (`QQuickWindow::setGraphicsApi(Software)`, если не задан
+  `QT_QUICK_BACKEND`). Замер (2026-10-25, Hyprland, Mesa): окно открыто — 94 МБ RSS / 22 МБ своей памяти
+  против 183 / 41 МБ через GPU; в трее одинаково (59 / 7,5 МБ). Mesa (libLLVM + libgallium, ~70–90 МБ)
+  не грузится вовсе; при GPU она остаётся в процессе и после закрытия окна. Визуально без разницы.
+  **Если интерфейс разрастётся** (размытие, тени, MultiEffect/ShaderEffect, много полноэкранных
+  анимаций, тормоза при растягивании на 4K) — вернуть GPU: убрать эту строку или `QT_QUICK_BACKEND=rhi`.
+  Пока это делать: `layer.samples` в AppIcon/ConnectButton уже рассчитан на GPU (MSAA), в программном
+  режиме игнорируется.
+
 ## Совместимость
 
 - Минимум Qt 6.4 (Debian 12, Ubuntu 24.04); 6.5+ фичи с фолбэком.
