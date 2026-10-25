@@ -27,6 +27,9 @@ public:
 
 signals:
     void enabledChanged();
+
+private:
+    bool write();
 };
 
 } // namespace agv

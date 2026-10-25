@@ -16,6 +16,19 @@ individual apps from the VPN**, the way the Windows client does.
 - `agv-gui` is the unprivileged window and tray. It talks only to the daemon.
 - `agv-run` starts a program already excluded from the VPN.
 
+## Install
+
+Arch Linux (builds this checkout into a package):
+
+```sh
+cd packaging/arch
+makepkg -si
+sudo systemctl enable --now agvd
+```
+
+Then open "AGV" from the application menu. The AdGuard VPN CLI itself comes from
+[adguard-vpn.com](https://adguard-vpn.com/) or the AUR (`adguardvpn-cli-bin`).
+
 ## Build
 
 Requirements: CMake ≥ 3.22, a C++20 compiler, Qt ≥ 6.4 (Core, DBus, Network, Gui, Widgets,
@@ -51,3 +64,7 @@ development build (to `/usr/local` and `/etc`) and remove it again:
 sudo scripts/dev-install.sh
 sudo scripts/dev-install.sh --uninstall
 ```
+
+## License
+
+[MIT](LICENSE). AGV is an independent project, not affiliated with or endorsed by AdGuard.

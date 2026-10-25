@@ -1,0 +1,44 @@
+# Builds this checkout as it is (working tree):  cd packaging/arch && makepkg -si
+# (For an AUR release the source becomes the public git URL and a tag.)
+
+pkgname=agv-gui-git
+_name=agv-gui
+pkgver=0.1.0.r12.g0283066
+pkgrel=1
+pkgdesc='VPN client for AdGuard VPN CLI with per-app exclusions (Qt 6)'
+arch=('x86_64' 'aarch64')
+url='https://github.com/raitar239/agv-gui'
+license=('MIT')
+depends=('qt6-base' 'qt6-declarative' 'nftables' 'iproute2' 'polkit' 'systemd')
+makedepends=('cmake' 'ninja' 'git' 'qt6-tools')
+optdepends=('adguardvpn-cli-bin: the AdGuard VPN CLI, unless installed from adguard-vpn.com')
+provides=("$_name")
+conflicts=("$_name")
+install=agv-gui.install
+_src=$(realpath "$startdir/../..")
+
+pkgver() {
+    cd "$_src"
+    local version
+    version=$(sed -n 's/^ *VERSION \([0-9.]*\)$/\1/p' CMakeLists.txt | head -1)
+    printf '%s.r%s.g%s' "$version" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+}
+
+build() {
+    cmake -S "$_src" -B build -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_INSTALL_LIBEXECDIR=lib/agv-gui \
+        -DBUILD_TESTING=ON
+    cmake --build build
+}
+
+check() {
+    # Tests needing a session bus or user namespaces skip themselves where those are missing.
+    ctest --test-dir build --output-on-failure
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+    install -Dm644 "$_src/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

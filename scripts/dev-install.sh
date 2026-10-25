@@ -29,6 +29,8 @@ reload_dbus() {
 }
 
 if [ "${1:-}" = "--uninstall" ]; then
+    # Disable first: a boot symlink to a removed unit would silently stop a packaged agvd from starting.
+    systemctl disable agvd.service 2>/dev/null || true
     systemctl stop agvd.service 2>/dev/null || true
     # Routing state outlives the daemon on purpose (excluded apps keep working across restarts),
     # so remove it explicitly.

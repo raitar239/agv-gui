@@ -11,9 +11,26 @@
 
 namespace agv {
 
+namespace {
+
+// "agv-gui" when that is what PATH finds, else this build's full path.
+QString programForConfig()
+{
+    const QString self = QCoreApplication::applicationFilePath();
+    const QString inPath = QStandardPaths::findExecutable(QStringLiteral("agv-gui"));
+    return !inPath.isEmpty() && QFileInfo(inPath).canonicalFilePath() == QFileInfo(self).canonicalFilePath()
+        ? QStringLiteral("agv-gui")
+        : self;
+}
+
+} // namespace
+
 Autostart::Autostart(QObject *parent)
     : QObject(parent)
 {
+    // Keep an existing entry pointing at this program (it may have moved, e.g. to a package).
+    if (enabled())
+        write();
 }
 
 QString Autostart::entryPath()
@@ -29,13 +46,7 @@ QString Autostart::compositorLine() const
         || qEnvironmentVariable("XDG_CURRENT_DESKTOP").contains(QLatin1String("Hyprland"), Qt::CaseInsensitive);
     if (!hyprland)
         return {};
-    // Plain "agv-gui" when that is what PATH finds, else this build's full path.
-    const QString self = QCoreApplication::applicationFilePath();
-    const QString inPath = QStandardPaths::findExecutable(QStringLiteral("agv-gui"));
-    const QString program = !inPath.isEmpty() && QFileInfo(inPath).canonicalFilePath() == QFileInfo(self).canonicalFilePath()
-        ? QStringLiteral("agv-gui")
-        : self;
-    return QStringLiteral("exec-once = %1 --hidden").arg(program);
+    return QStringLiteral("exec-once = %1 --hidden").arg(programForConfig());
 }
 
 void Autostart::copyToClipboard(const QString &text) const
@@ -60,12 +71,18 @@ void Autostart::setEnabled(bool enabled)
         return;
     }
 
+    if (write())
+        emit enabledChanged();
+}
+
+bool Autostart::write()
+{
+    const QString path = entryPath();
     QDir().mkpath(QFileInfo(path).path());
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly))
-        return;
-    // The program's own path, so a development build starts itself too.
-    QString program = QCoreApplication::applicationFilePath();
+        return false;
+    QString program = programForConfig();
     program.replace(QLatin1Char('"'), QLatin1String("\\\""));
     file.write(QStringLiteral("[Desktop Entry]\n"
                               "Type=Application\n"
@@ -74,8 +91,7 @@ void Autostart::setEnabled(bool enabled)
                               "Icon=network-vpn\n"
                               "Terminal=false\n"
                               "X-GNOME-Autostart-enabled=true\n").arg(program).toUtf8());
-    if (file.commit())
-        emit enabledChanged();
+    return file.commit();
 }
 
 } // namespace agv
