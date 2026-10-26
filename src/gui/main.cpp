@@ -1,10 +1,11 @@
+#include "appmark.h"
 #include "autostart.h"
+#include "cliupdates.h"
 #include "daemonclient.h"
 #include "installedapps.h"
 #include "language.h"
-#include "locationmodel.h"
-#include "cliupdates.h"
 #include "leakcheck.h"
+#include "locationmodel.h"
 #include "notifier.h"
 #include "systemtheme.h"
 #include "trayicon.h"
@@ -72,6 +73,7 @@ int main(int argc, char *argv[])
     QCoreApplication::setApplicationVersion(QStringLiteral(AGV_VERSION));
     QGuiApplication::setApplicationDisplayName(QStringLiteral("AGV"));
     QGuiApplication::setDesktopFileName(QStringLiteral("agv-gui"));
+    QGuiApplication::setWindowIcon(QIcon::fromTheme(QStringLiteral("agv-gui"), appMarkIcon(QColor(0x74, 0xa3, 0x52))));
 
     QCommandLineParser parser;
     parser.setApplicationDescription(QStringLiteral("AGV: VPN connection with per-app exclusions"));

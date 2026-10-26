@@ -88,7 +88,7 @@ bool Autostart::write()
                               "Type=Application\n"
                               "Name=AGV\n"
                               "Exec=\"%1\" --hidden\n"
-                              "Icon=network-vpn\n"
+                              "Icon=agv-gui\n"
                               "Terminal=false\n"
                               "X-GNOME-Autostart-enabled=true\n").arg(program).toUtf8());
     return file.commit();

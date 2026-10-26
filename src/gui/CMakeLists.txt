@@ -1,5 +1,7 @@
 qt_add_executable(agv-gui
     main.cpp
+    appmark.h
+    appmark.cpp
     autostart.h
     autostart.cpp
     daemonclient.h

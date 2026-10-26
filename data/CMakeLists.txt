@@ -12,4 +12,5 @@ install(FILES polkit/org.agv.daemon.policy DESTINATION ${CMAKE_INSTALL_DATADIR}/
 
 if(AGV_BUILD_GUI)
     install(FILES agv-gui.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+    install(FILES icons/agv-gui.svg DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps)
 endif()

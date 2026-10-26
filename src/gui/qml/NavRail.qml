@@ -34,7 +34,17 @@ Rectangle {
             Layout.alignment: root.showLabels ? Qt.AlignLeft : Qt.AlignHCenter
             Layout.leftMargin: root.showLabels ? 10 : 0
             Layout.bottomMargin: Theme.spacing
-            AppIcon { name: "shield"; color: Theme.accent; size: 26; filled: false }
+            // The app icon in small: the mark on a green tile.
+            Rectangle {
+                implicitWidth: 30
+                implicitHeight: 30
+                radius: 9
+                gradient: Gradient {
+                    GradientStop { position: 0; color: "#83b45f" }
+                    GradientStop { position: 1; color: "#4e7838" }
+                }
+                AppIcon { anchors.centerIn: parent; name: "agv"; color: "white"; size: 24 }
+            }
             Text {
                 visible: root.showLabels
                 text: "AGV"
