@@ -1,6 +1,8 @@
 #pragma once
 
+#include <QHash>
 #include <QList>
+#include <QStringList>
 #include <QString>
 #include <QVariantMap>
 
@@ -22,7 +24,8 @@ struct AppRule {
     bool operator==(const AppRule &) const = default;
 };
 
-// The persisted list of app exclusions (JSON in the daemon's data directory).
+// The persisted app exclusions (JSON in the daemon's data directory). Like the CLI's site lists,
+// each mode keeps its own list: the apps that skip the VPN and the apps that alone use it.
 class AppStore
 {
 public:
@@ -32,11 +35,13 @@ public:
     QString load();
     QString save() const;
 
-    const QList<AppRule> &rules() const { return m_rules; }
+    // The current mode's list; every call below works on it.
+    const QList<AppRule> &rules() const;
 
     // "bypass" (listed apps skip the VPN) or "vpn-only" (only listed apps use it).
     QString mode() const { return m_mode; }
     void setMode(const QString &mode) { m_mode = mode; }
+    static QStringList modes() { return {QStringLiteral("bypass"), QStringLiteral("vpn-only")}; }
     static bool isValidMode(const QString &mode);
     const AppRule *find(const QString &id) const;
 
@@ -51,12 +56,15 @@ public:
     // Adds a rule with a fresh id and returns that id.
     QString add(AppRule rule);
     bool replace(const AppRule &rule);
-    void setRules(QList<AppRule> rules) { m_rules = std::move(rules); }
+    void setRules(QList<AppRule> rules) { m_rules[m_mode] = std::move(rules); }
     bool remove(const QString &id);
 
 private:
+    // An app's id is unique across both lists: it names the app's cgroup.
+    bool idTaken(const QString &id) const;
+
     QString m_path;
-    QList<AppRule> m_rules;
+    QHash<QString, QList<AppRule>> m_rules;  // mode → its list
     QString m_mode = QStringLiteral("bypass");
 };
 

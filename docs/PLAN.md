@@ -290,7 +290,9 @@ cgroup v2 → nftables `socket cgroupv2` → `meta mark` → `ip rule fwmark` �
 6. Сверху: потрафиковая статистика, inverse-режим, профили.
    ✓ Режим `vpn-only` («только эти приложения через VPN»): те же метки и cgroup, меняется только правило —
    `not fwmark … lookup main`; помеченный трафик уходит в таблицу 880 AdGuard, masquerade чинит source
-   уже в tun. Хранится в `app-exclusions.json` (`mode`), D-Bus `AppExclusionMode` /
+   уже в tun. Хранится в `app-exclusions.json` (`mode`; как у сайтов в CLI, у каждого режима свой список
+   приложений — формат 2, `apps: {bypass: [...], vpn-only: [...]}`; файл версии 1 читается, его список
+   остаётся за сохранённым режимом), D-Bus `AppExclusionMode` /
    `SetAppExclusionMode` под `org.agv.daemon.configure` (влияет на всю систему). `agv-run` в этом
    режиме, наоборот, пускает через VPN. GUI: переключатель на вкладке Apps; на главной в этом режиме
    «Connected — Only N apps use …» вместо «Protected».

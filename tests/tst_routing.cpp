@@ -373,6 +373,50 @@ private slots:
         QVERIFY(reloaded.rules().first().enabled);
     }
 
+    void storePerMode()
+    {
+        QTemporaryDir dir;
+        const QString path = dir.path() + QStringLiteral("/apps.json");
+        AppStore store(path);
+        QCOMPARE(store.load(), QString());
+        QString error;
+        const QString game = store.add(*AppStore::fromMap({{QStringLiteral("name"), QStringLiteral("Game")}}, &error));
+
+        // The other mode starts with its own, empty list.
+        store.setMode(QStringLiteral("vpn-only"));
+        QVERIFY(store.rules().isEmpty());
+        QVERIFY(!store.find(game));
+        const QString browser = store.add(*AppStore::fromMap({{QStringLiteral("name"), QStringLiteral("Browser")}}, &error));
+        QVERIFY(browser != game);
+        QCOMPARE(store.save(), QString());
+
+        AppStore reloaded(path);
+        QCOMPARE(reloaded.load(), QString());
+        QCOMPARE(reloaded.mode(), QStringLiteral("vpn-only"));
+        QCOMPARE(reloaded.rules().size(), 1);
+        QCOMPARE(reloaded.rules().first().name, QStringLiteral("Browser"));
+        reloaded.setMode(QStringLiteral("bypass"));
+        QCOMPARE(reloaded.rules().size(), 1);
+        QCOMPARE(reloaded.rules().first().id, game);
+    }
+
+    void storeReadsVersion1()
+    {
+        // Before per-mode lists the one list belonged to whatever mode was saved.
+        QTemporaryDir dir;
+        const QString path = dir.path() + QStringLiteral("/apps.json");
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write(R"({"version": 1, "mode": "bypass",
+                       "apps": [{"id": "app-0000000a", "name": "Game", "enabled": true}]})");
+        file.close();
+        AppStore store(path);
+        QCOMPARE(store.load(), QString());
+        QCOMPARE(store.rules().size(), 1);
+        store.setMode(QStringLiteral("vpn-only"));
+        QVERIFY(store.rules().isEmpty());
+    }
+
     void storeValidation_data()
     {
         QTest::addColumn<QVariantMap>("fields");

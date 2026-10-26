@@ -12,7 +12,8 @@ namespace agv {
 
 namespace {
 
-constexpr int FormatVersion = 1;
+// 1: one "apps" array shared by both modes; 2: "apps" holds a list per mode.
+constexpr int FormatVersion = 2;
 constexpr qsizetype MaxNameLength = 200;
 constexpr qsizetype MaxFieldLength = 4096;
 
@@ -63,7 +64,8 @@ QString AppStore::load()
         return QStringLiteral("%1 is not valid JSON: %2").arg(m_path, parseError.errorString());
 
     const QJsonObject root = document.object();
-    if (root.value(QStringLiteral("version")).toInt() != FormatVersion)
+    const int version = root.value(QStringLiteral("version")).toInt();
+    if (version != 1 && version != FormatVersion)
         return QStringLiteral("%1 has an unsupported version").arg(m_path);
 
     const QString mode = root.value(QStringLiteral("mode")).toString(QStringLiteral("bypass"));
@@ -71,30 +73,48 @@ QString AppStore::load()
         return QStringLiteral("%1 has an unknown mode %2").arg(m_path, mode);
     m_mode = mode;
 
-    for (const QJsonValue &value : root.value(QStringLiteral("apps")).toArray()) {
-        const QVariantMap map = value.toObject().toVariantMap();
-        const QString id = map.value(QStringLiteral("id")).toString();
-        QString error;
-        QVariantMap fields = map;
-        const qint64 owner = fields.take(QStringLiteral("owner_uid")).toLongLong();
-        auto rule = fromMap(fields, &error);
-        if (!isValidId(id) || !rule || find(id))
-            return QStringLiteral("%1 contains an invalid entry %2 %3").arg(m_path, id, error);
-        rule->id = id;
-        rule->ownerUid = map.contains(QStringLiteral("owner_uid")) ? owner : -1;
-        m_rules.append(*rule);
+    // Version 1 had one list for both modes: it stays with the mode it was saved in.
+    QHash<QString, QJsonArray> lists;
+    if (version == 1) {
+        lists.insert(mode, root.value(QStringLiteral("apps")).toArray());
+    } else {
+        const QJsonObject apps = root.value(QStringLiteral("apps")).toObject();
+        for (const QString &listMode : modes())
+            lists.insert(listMode, apps.value(listMode).toArray());
+    }
+
+    for (auto list = lists.cbegin(); list != lists.cend(); ++list) {
+        for (const QJsonValue &value : list.value()) {
+            const QVariantMap map = value.toObject().toVariantMap();
+            const QString id = map.value(QStringLiteral("id")).toString();
+            QString error;
+            QVariantMap fields = map;
+            const qint64 owner = fields.take(QStringLiteral("owner_uid")).toLongLong();
+            auto rule = fromMap(fields, &error);
+            if (!isValidId(id) || !rule || idTaken(id)) {
+                m_rules.clear();
+                return QStringLiteral("%1 contains an invalid entry %2 %3").arg(m_path, id, error);
+            }
+            rule->id = id;
+            rule->ownerUid = map.contains(QStringLiteral("owner_uid")) ? owner : -1;
+            m_rules[list.key()].append(*rule);
+        }
     }
     return {};
 }
 
 QString AppStore::save() const
 {
-    QJsonArray apps;
-    for (const AppRule &rule : m_rules) {
-        QVariantMap map = toMap(rule);
-        map.insert(QStringLiteral("id"), rule.id);
-        map.insert(QStringLiteral("owner_uid"), rule.ownerUid);
-        apps.append(QJsonObject::fromVariantMap(map));
+    QJsonObject apps;
+    for (const QString &listMode : modes()) {
+        QJsonArray list;
+        for (const AppRule &rule : m_rules.value(listMode)) {
+            QVariantMap map = toMap(rule);
+            map.insert(QStringLiteral("id"), rule.id);
+            map.insert(QStringLiteral("owner_uid"), rule.ownerUid);
+            list.append(QJsonObject::fromVariantMap(map));
+        }
+        apps.insert(listMode, list);
     }
     const QJsonObject root{{QStringLiteral("version"), FormatVersion},
                            {QStringLiteral("mode"), m_mode},
@@ -110,13 +130,31 @@ QString AppStore::save() const
     return {};
 }
 
+const QList<AppRule> &AppStore::rules() const
+{
+    static const QList<AppRule> none;
+    const auto list = m_rules.constFind(m_mode);
+    return list == m_rules.cend() ? none : *list;
+}
+
 const AppRule *AppStore::find(const QString &id) const
 {
-    for (const AppRule &rule : m_rules) {
+    for (const AppRule &rule : rules()) {
         if (rule.id == id)
             return &rule;
     }
     return nullptr;
+}
+
+bool AppStore::idTaken(const QString &id) const
+{
+    for (const QList<AppRule> &list : m_rules) {
+        for (const AppRule &rule : list) {
+            if (rule.id == id)
+                return true;
+        }
+    }
+    return false;
 }
 
 std::optional<AppRule> AppStore::fromMap(const QVariantMap &map, QString *error, const AppRule *base)
@@ -188,14 +226,14 @@ QString AppStore::add(AppRule rule)
 {
     do {
         rule.id = QStringLiteral("app-%1").arg(QRandomGenerator::system()->generate(), 8, 16, QLatin1Char('0'));
-    } while (find(rule.id));
-    m_rules.append(rule);
+    } while (idTaken(rule.id));
+    m_rules[m_mode].append(rule);
     return rule.id;
 }
 
 bool AppStore::replace(const AppRule &rule)
 {
-    for (AppRule &existing : m_rules) {
+    for (AppRule &existing : m_rules[m_mode]) {
         if (existing.id == rule.id) {
             existing = rule;
             return true;
@@ -206,7 +244,7 @@ bool AppStore::replace(const AppRule &rule)
 
 bool AppStore::remove(const QString &id)
 {
-    return m_rules.removeIf([&](const AppRule &rule) { return rule.id == id; }) > 0;
+    return m_rules[m_mode].removeIf([&](const AppRule &rule) { return rule.id == id; }) > 0;
 }
 
 } // namespace agv
