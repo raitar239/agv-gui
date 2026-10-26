@@ -12,7 +12,6 @@ namespace {
 const QString Service = QStringLiteral("org.freedesktop.NetworkManager");
 const QString RootPath = QStringLiteral("/org/freedesktop/NetworkManager");
 const QString RootInterface = QStringLiteral("org.freedesktop.NetworkManager");
-constexpr uint ApPrivacy = 0x1;  // NM_802_11_AP_FLAGS_PRIVACY
 
 QString pathOf(const QVariant &value)
 {
@@ -63,37 +62,13 @@ QVariant NetworkWatcher::property(const QString &path, const QString &interface,
 
 void NetworkWatcher::refresh()
 {
-    Network network;
+    QString uuid;
     const QString active = pathOf(property(RootPath, RootInterface, QStringLiteral("PrimaryConnection")));
-    if (!active.isEmpty() && active != QLatin1String("/")) {
-        const QString activeInterface = QStringLiteral("org.freedesktop.NetworkManager.Connection.Active");
-        network.uuid = property(active, activeInterface, QStringLiteral("Uuid")).toString();
-        network.name = property(active, activeInterface, QStringLiteral("Id")).toString();
-        const QString type = property(active, activeInterface, QStringLiteral("Type")).toString();
-        if (type == QLatin1String("802-11-wireless")) {
-            network.type = QStringLiteral("wifi");
-            const auto devices = qdbus_cast<QList<QDBusObjectPath>>(property(active, activeInterface, QStringLiteral("Devices")));
-            if (!devices.isEmpty()) {
-                const QString ap = pathOf(property(devices.first().path(),
-                                                   QStringLiteral("org.freedesktop.NetworkManager.Device.Wireless"),
-                                                   QStringLiteral("ActiveAccessPoint")));
-                if (!ap.isEmpty() && ap != QLatin1String("/")) {
-                    const QString apInterface = QStringLiteral("org.freedesktop.NetworkManager.AccessPoint");
-                    const uint flags = property(ap, apInterface, QStringLiteral("Flags")).toUInt();
-                    const uint wpa = property(ap, apInterface, QStringLiteral("WpaFlags")).toUInt();
-                    const uint rsn = property(ap, apInterface, QStringLiteral("RsnFlags")).toUInt();
-                    network.open = !(flags & ApPrivacy) && wpa == 0 && rsn == 0;
-                }
-            }
-        } else if (type == QLatin1String("802-3-ethernet")) {
-            network.type = QStringLiteral("ethernet");
-        } else {
-            network.type = QStringLiteral("other");
-        }
-    }
-    if (network == m_current)
+    if (!active.isEmpty() && active != QLatin1String("/"))
+        uuid = property(active, QStringLiteral("org.freedesktop.NetworkManager.Connection.Active"), QStringLiteral("Uuid")).toString();
+    if (uuid == m_current)
         return;
-    m_current = network;
+    m_current = uuid;
     emit changed();
 }
 

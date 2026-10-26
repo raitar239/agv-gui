@@ -7,7 +7,6 @@
 #include "execwatcher.h"
 #include "dnsguard.h"
 #include "killswitch.h"
-#include "networkrules.h"
 #include "networkwatcher.h"
 #include "dbustypes.h"
 #include "polkitauthorizer.h"
@@ -230,10 +229,13 @@ int main(int argc, char *argv[])
     if (apps.isSupported())
         service.setProtection(&killSwitch, &dnsGuard, &routing);
 
-    // Network rules: NetworkManager lives on the system bus even in session-bus development.
+    // A new network is the best moment for a pending reconnect. NetworkManager lives on the
+    // system bus even in session-bus development.
     NetworkWatcher networkWatcher(QDBusConnection::systemBus());
-    NetworkRules networkRules(&networkWatcher, &vpn, &settings);
-    service.setNetworkRules(&networkRules);
+    QObject::connect(&networkWatcher, &NetworkWatcher::changed, &vpn, [&networkWatcher, &vpn] {
+        if (networkWatcher.isOnline())
+            vpn.networkChanged();
+    });
 
     vpn.start();
     networkWatcher.start();

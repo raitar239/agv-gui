@@ -127,8 +127,6 @@ int status(const QStringList &args)
     if (args.contains(QLatin1String("--json"))) {
         QJsonObject json = QJsonObject::fromVariantMap(p);
         json.remove(QStringLiteral("ExternalVpns"));
-        json.remove(QStringLiteral("Network"));
-        json.remove(QStringLiteral("TrustedNetworks"));
         out << QJsonDocument(json).toJson();
         return 0;
     }

@@ -9,27 +9,19 @@ class QTimer;
 
 namespace agv {
 
-// The network the computer uses for the internet, as NetworkManager sees it (its primary
-// connection). Without NetworkManager isAvailable() is false and nothing is reported.
+// Which network the computer uses for the internet, as NetworkManager sees it (its primary
+// connection), to notice when it changes. Without NetworkManager nothing is reported.
 class NetworkWatcher : public QObject
 {
     Q_OBJECT
 
 public:
-    struct Network {
-        QString uuid;   // NetworkManager connection profile
-        QString name;   // profile name; for Wi-Fi usually the SSID
-        QString type;   // "wifi", "ethernet", "other"; empty when offline
-        bool open = false;  // Wi-Fi without encryption
-
-        bool operator==(const Network &) const = default;
-    };
-
     explicit NetworkWatcher(QDBusConnection bus, QObject *parent = nullptr);
 
     void start();
     bool isAvailable() const { return m_available; }
-    Network current() const { return m_current; }
+    // Connected to some network (NetworkManager has a primary connection).
+    bool isOnline() const { return !m_current.isEmpty(); }
 
 signals:
     // A different network (or none); settled for a moment, so connection steps do not count.
@@ -45,7 +37,7 @@ private:
     QDBusConnection m_bus;
     QTimer *m_settle;
     bool m_available = false;
-    Network m_current;
+    QString m_current;  // the primary connection's profile uuid
 };
 
 } // namespace agv

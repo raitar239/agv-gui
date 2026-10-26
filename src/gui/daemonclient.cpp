@@ -435,34 +435,6 @@ void DaemonClient::setKillSwitchAllowLan(bool enabled)
     call(QStringLiteral("SetKillSwitchAllowLan"), {enabled});
 }
 
-QVariantList DaemonClient::trustedNetworks() const
-{
-    const QVariantMap networks = m_props.value(QStringLiteral("TrustedNetworks")).toMap();
-    QVariantList result;
-    for (auto it = networks.cbegin(); it != networks.cend(); ++it)
-        result.append(QVariantMap{{QStringLiteral("uuid"), it.key()}, {QStringLiteral("name"), it.value().toString()}});
-    std::sort(result.begin(), result.end(), [](const QVariant &a, const QVariant &b) {
-        return a.toMap().value(QStringLiteral("name")).toString().localeAwareCompare(
-                   b.toMap().value(QStringLiteral("name")).toString()) < 0;
-    });
-    return result;
-}
-
-void DaemonClient::setWifiAutoConnect(bool enabled)
-{
-    call(QStringLiteral("SetWifiAutoConnect"), {enabled});
-}
-
-void DaemonClient::setTrustedDisconnect(bool enabled)
-{
-    call(QStringLiteral("SetTrustedDisconnect"), {enabled});
-}
-
-void DaemonClient::setNetworkTrusted(const QString &uuid, const QString &name, bool trusted)
-{
-    call(QStringLiteral("SetNetworkTrusted"), {uuid, name, trusted});
-}
-
 void DaemonClient::updateCli()
 {
     call(QStringLiteral("UpdateCli"), {}, [this](const QDBusMessage &) {
@@ -720,9 +692,6 @@ void DaemonClient::applyProperties(const QVariantMap &props)
         if (it.key() == QLatin1String("ExternalVpns")) {
             const auto list = qdbus_cast<AgvExternalVpnList>(it.value());
             m_externalVpnCount = int(list.size());
-        } else if (it.value().metaType() == QMetaType::fromType<QDBusArgument>()) {
-            // Nested dictionaries (Network, TrustedNetworks) arrive still marshalled.
-            m_props.insert(it.key(), qdbus_cast<QVariantMap>(it.value()));
         } else {
             m_props.insert(it.key(), it.value());
         }

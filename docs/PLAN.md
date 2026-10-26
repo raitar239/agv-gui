@@ -333,11 +333,9 @@ cgroup v2 → nftables `socket cgroupv2` → `meta mark` → `ip rule fwmark` �
    Пока CLI нет, CliRunner ищет его перед каждой командой — установка не требует перезапуска агента.
    GUI раз в сутки берёт последний релиз с GitHub (`releases/latest`, тег `v1.8.1-release`); баннер
    с командой установки, если CLI нет. `check-update` CLI без терминала молчит — не используется.
-   ✓ Правила сетей (агент, NetworkManager по D-Bus, `NetworkWatcher` + `NetworkRules`): основная сеть —
-   uuid профиля, имя, тип, открытая ли Wi-Fi (флаги точки доступа). При смене сети (после 2 с
-   затишья): недоверенная Wi-Fi и `wifi_auto_connect` → connect; доверенная и `trusted_disconnect` →
-   disconnect; ожидающее переподключение пробуется сразу. Только на смене сети — ручные действия
-   держатся до следующей. D-Bus `Network`, `TrustedNetworks` (uuid → имя), `SetNetworkTrusted`.
+   ✓ Смена сети (NetworkManager по D-Bus, `NetworkWatcher`): ожидающее переподключение пробуется сразу.
+   ✗ Правила сетей (автоподключение в недоверенных Wi-Fi, отключение в доверенных) — были сделаны и
+   убраны по решению автора как лишние.
    ✓ Уведомления (GUI, org.freedesktop.Notifications): обрыв, переподключение, блокировка kill switch;
    ручные действия молчат; выключаются в настройках.
 7. Упаковка и тесты: Arch, Fedora, Ubuntu, Debian; Hyprland, KDE, GNOME.

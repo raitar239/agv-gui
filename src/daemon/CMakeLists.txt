@@ -19,8 +19,6 @@ add_library(agvd-core STATIC
     dnsguard.cpp
     hostsystem.h
     killswitch.h
-    networkrules.h
-    networkrules.cpp
     networkwatcher.h
     networkwatcher.cpp
     killswitch.cpp

@@ -195,30 +195,6 @@
     <!-- The VPN dropped and agvd is connecting again; Disconnect stops it -->
     <property name="Reconnecting" type="b" access="read"/>
 
-    <!-- Network rules (NetworkManager). Network: {available, uuid, name, type ("wifi", "ethernet",
-         "other", "" offline), open, trusted}. TrustedNetworks: uuid → name -->
-    <property name="Network" type="a{sv}" access="read">
-      <annotation name="org.qtproject.QtDBus.QtTypeName" value="QVariantMap"/>
-    </property>
-    <property name="TrustedNetworks" type="a{sv}" access="read">
-      <annotation name="org.qtproject.QtDBus.QtTypeName" value="QVariantMap"/>
-    </property>
-    <!-- Connect when the computer joins Wi-Fi that is not trusted -->
-    <property name="WifiAutoConnect" type="b" access="read"/>
-    <method name="SetWifiAutoConnect">
-      <arg name="enabled" type="b" direction="in"/>
-    </method>
-    <!-- Disconnect when it joins a trusted network -->
-    <property name="TrustedDisconnect" type="b" access="read"/>
-    <method name="SetTrustedDisconnect">
-      <arg name="enabled" type="b" direction="in"/>
-    </method>
-    <method name="SetNetworkTrusted">
-      <arg name="uuid" type="s" direction="in"/>
-      <arg name="name" type="s" direction="in"/>
-      <arg name="trusted" type="b" direction="in"/>
-    </method>
-
     <!-- The installed adguardvpn-cli: version ("1.8.1") and how it was installed: "script"
          (AdGuard's installer, can update itself), "package", "other" or "missing" -->
     <property name="CliVersion" type="s" access="read"/>
