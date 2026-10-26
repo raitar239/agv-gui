@@ -8,7 +8,8 @@ Item {
     id: root
 
     property var bars: []
-    property real maxValue: 0
+    // From the bars themselves, so the scale never lags behind new data for a frame.
+    readonly property real maxValue: bars.reduce((top, bar) => Math.max(top, bar.in + bar.out), 0)
     property string emptyText
 
     // Scale top: a round number of B/KB/MB/GB so the grid labels read well.
@@ -85,7 +86,7 @@ Item {
                         id: stack
                         readonly property real barWidth: Math.max(3, Math.min(28, row.slot * 0.62))
                         width: barWidth
-                        height: column.total > 0 ? Math.max(2, row.height * column.total / root.scaleMax) : 0
+                        height: column.total > 0 ? Math.min(row.height, Math.max(2, row.height * column.total / root.scaleMax)) : 0
                         anchors.bottom: parent.bottom
                         anchors.horizontalCenter: parent.horizontalCenter
                         clip: true

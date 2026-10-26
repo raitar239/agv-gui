@@ -234,7 +234,7 @@ Item {
                     color: Theme.chartGrid
                     Layout.fillWidth: true
                     Rectangle {
-                        width: Math.max(6, parent.width * share.fraction)
+                        width: Math.min(parent.width, Math.max(6, parent.width * share.fraction))
                         height: parent.height
                         radius: 3
                         color: share.selected ? Theme.accentHover : Theme.accent
@@ -471,7 +471,6 @@ Item {
                     }
                     BarChart {
                         bars: page.chartStats.chart
-                        maxValue: page.chartStats.chartMax
                         emptyText: qsTr("No traffic in this period yet")
                         Layout.fillWidth: true
                         Layout.preferredHeight: page.narrow ? 170 : 210
