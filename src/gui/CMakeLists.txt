@@ -14,6 +14,8 @@ qt_add_executable(agv-gui
     keyedlistmodel.cpp
     locationmodel.h
     locationmodel.cpp
+    notifier.h
+    notifier.cpp
     statistics.h
     statistics.cpp
     systemtheme.h

@@ -30,6 +30,8 @@ constexpr int ExternalStopPollMs = 250;
 constexpr int AutoConnectRetryMs = 30'000;
 constexpr int AutoConnectMaxAttempts = 20;   // ~10 minutes of waiting for the network
 constexpr int ExternalStopTimeoutMs = 10'000;
+// Pauses between reconnect attempts after a drop; the last one repeats until it works.
+constexpr int ReconnectDelaysMs[] = {3'000, 5'000, 10'000, 20'000, 30'000, 60'000};
 
 QString lastMeaningfulLine(const QString &output)
 {
@@ -69,7 +71,10 @@ VpnService::VpnService(CliRunner *cli, QObject *parent)
     , m_cli(cli)
     , m_poll(new QTimer(this))
     , m_autoConnectRetry(new QTimer(this))
+    , m_reconnect(new QTimer(this))
 {
+    m_reconnect->setSingleShot(true);
+    connect(m_reconnect, &QTimer::timeout, this, &VpnService::reconnectNow);
     m_autoConnectRetry->setSingleShot(true);
     connect(m_autoConnectRetry, &QTimer::timeout, this, &VpnService::tryAutoConnect);
     m_poll->setSingleShot(true);
@@ -114,7 +119,7 @@ void VpnService::tryAutoConnect()
 {
     // Only from a plain disconnected state: never fight a user's choice or another VPN instance.
     const bool idle = m_state == State::Disconnected || m_state == State::Error; // Error: last try failed
-    if (!m_autoConnect || m_transitioning || !idle || !m_externalVpns.isEmpty())
+    if (!m_autoConnect || m_transitioning || m_reconnecting || !idle || !m_externalVpns.isEmpty())
         return;
     if (++m_autoConnectAttempts > AutoConnectMaxAttempts)
         return;
@@ -296,6 +301,18 @@ void VpnService::disconnectVpn(Done done)
 {
     // An explicit disconnect ends any pending automatic attempts.
     m_autoConnectRetry->stop();
+    const bool wasReconnecting = m_reconnecting;
+    if (m_wanted || m_reconnecting) {
+        m_wanted = false;
+        stopReconnecting();
+        emit statusChanged();
+    }
+    if (m_transitioning && wasReconnecting) {
+        // A reconnect attempt is running: undo it as soon as it ends.
+        m_disconnectAfterAttempt = true;
+        done({});
+        return;
+    }
     if (m_transitioning) {
         done({errors::Busy, QStringLiteral("Another connection change is in progress")});
         return;
@@ -628,6 +645,11 @@ void VpnService::cancelLogin()
 
 void VpnService::logout(Done done)
 {
+    if (m_wanted || m_reconnecting) {
+        m_wanted = false;
+        stopReconnecting();
+        emit statusChanged();
+    }
     runChecked({QStringLiteral("logout")}, [this, done](const QString &, const Error &error) {
         refreshStatus([done, error](const Error &) { done(error); });
     });
@@ -685,7 +707,85 @@ void VpnService::setStatus(State state, const QString &location, const QString &
     m_location = location;
     m_mode = mode;
     m_tunDevice = tunDevice;
+    trackConnection();
     emit statusChanged();
+}
+
+void VpnService::trackConnection()
+{
+    switch (m_state) {
+    case State::Connected:
+        // However it got here: our connect, a reconnect, or already up when agvd started.
+        m_wanted = true;
+        if (!m_tunDevice.isEmpty())
+            m_lastTunDevice = m_tunDevice;
+        if (!m_mode.isEmpty())
+            m_lastMode = m_mode;
+        stopReconnecting();
+        break;
+    case State::NotLoggedIn:
+        m_wanted = false;
+        stopReconnecting();
+        break;
+    case State::Disconnected:
+    case State::Error:
+        // Dropped while it should be up: the network went away, the CLI exited, the server
+        // closed the connection. Our own failed connects never set wanted, so they end here.
+        if (m_wanted && !m_transitioning && !m_reconnecting) {
+            m_reconnecting = true;
+            scheduleReconnect();
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+void VpnService::scheduleReconnect()
+{
+    const int last = int(std::size(ReconnectDelaysMs)) - 1;
+    m_reconnect->start(ReconnectDelaysMs[std::min(m_reconnectAttempts, last)]);
+}
+
+void VpnService::reconnectNow()
+{
+    if (!m_reconnecting)
+        return;
+    if (m_transitioning) {
+        scheduleReconnect();
+        return;
+    }
+    ++m_reconnectAttempts;
+    // No location: the CLI goes back to the last one used.
+    connectWith({QStringLiteral("connect"), QStringLiteral("-y"), QStringLiteral("--no-progress")},
+                [this](const Error &error) {
+        if (m_disconnectAfterAttempt) {
+            m_disconnectAfterAttempt = false;
+            m_wanted = false;
+            stopReconnecting();
+            if (m_state == State::Connected)
+                disconnectVpn([](const Error &) {});
+            else
+                emit statusChanged();
+            return;
+        }
+        if (error.isOk() || m_state == State::Connected || !m_reconnecting)
+            return;
+        if (error.name == errors::NotLoggedIn) {
+            m_wanted = false;
+            stopReconnecting();
+            emit statusChanged();
+            return;
+        }
+        scheduleReconnect();
+    });
+}
+
+void VpnService::stopReconnecting()
+{
+    m_reconnecting = false;
+    m_reconnectAttempts = 0;
+    m_reconnect->stop();
 }
 
 void VpnService::setLastError(const QString &message)

@@ -5,6 +5,7 @@
 #include "daemonservice.h"
 #include "daemonsettings.h"
 #include "execwatcher.h"
+#include "killswitch.h"
 #include "dbustypes.h"
 #include "polkitauthorizer.h"
 #include "routingengine.h"
@@ -101,6 +102,7 @@ int main(int argc, char *argv[])
         // Run from the uninstall path after agvd has stopped; init() only finds the cgroup.
         routing.init();
         routing.teardown();
+        KillSwitch(&commands).release();
         return 0;
     }
 
@@ -215,6 +217,15 @@ int main(int argc, char *argv[])
     QObject::connect(&vpn, &VpnService::statusChanged, &stats, &StatsRecorder::sampleNow);
     service.setStatistics(&stats);
 
+    // A table left by a crashed agvd goes; it comes back below if the VPN is still meant to be up.
+    KillSwitch killSwitch(&commands);
+    killSwitch.release();
+    if (apps.isSupported())
+        service.setKillSwitch(&killSwitch, &routing);
+
     vpn.start();
-    return app.exec();
+    const int code = app.exec();
+    // Stopping agvd must never leave the computer cut off.
+    killSwitch.release();
+    return code;
 }

@@ -47,6 +47,12 @@ class DaemonClient : public QObject
     // A setting changed while connected; it takes effect after reconnecting.
     Q_PROPERTY(bool needsReconnect READ needsReconnect NOTIFY configChanged)
     Q_PROPERTY(bool autoConnect READ autoConnect NOTIFY statusChanged)
+    Q_PROPERTY(bool killSwitch READ killSwitch NOTIFY statusChanged)
+    Q_PROPERTY(bool killSwitchAllowLan READ killSwitchAllowLan NOTIFY statusChanged)
+    // The VPN is down and the kill switch is holding traffic back.
+    Q_PROPERTY(bool killSwitchActive READ killSwitchActive NOTIFY statusChanged)
+    // The VPN dropped and agvd is connecting again.
+    Q_PROPERTY(bool reconnecting READ reconnecting NOTIFY statusChanged)
     // Bytes through the tunnel since it came up; refreshed by refreshTunnelTraffic().
     // False in SOCKS5 mode: there is no tunnel whose traffic could be counted.
     Q_PROPERTY(bool hasTunnel READ hasTunnel NOTIFY statusChanged)
@@ -89,6 +95,10 @@ public:
     }
     bool startAtBoot() const { return m_props.value(QStringLiteral("StartAtBoot")).toBool(); }
     bool autoConnect() const { return m_props.value(QStringLiteral("AutoConnect")).toBool(); }
+    bool killSwitch() const { return m_props.value(QStringLiteral("KillSwitch")).toBool(); }
+    bool killSwitchAllowLan() const { return m_props.value(QStringLiteral("KillSwitchAllowLan"), true).toBool(); }
+    bool killSwitchActive() const { return m_props.value(QStringLiteral("KillSwitchActive")).toBool(); }
+    bool reconnecting() const { return m_props.value(QStringLiteral("Reconnecting")).toBool(); }
     QVariantMap config() const { return m_config; }
     bool needsReconnect() const { return m_needsReconnect && connected(); }
     bool hasTunnel() const { return !m_props.value(QStringLiteral("TunDevice")).toString().isEmpty(); }
@@ -140,6 +150,8 @@ public:
     Q_INVOKABLE void reconnect();
     Q_INVOKABLE void setStartAtBoot(bool enabled);
     Q_INVOKABLE void setAutoConnect(bool enabled);
+    Q_INVOKABLE void setKillSwitch(bool enabled);
+    Q_INVOKABLE void setKillSwitchAllowLan(bool enabled);
     // Reads the tunnel interface counters from sysfs (cheap; called by the UI while visible).
     Q_INVOKABLE void refreshTunnelTraffic();
 

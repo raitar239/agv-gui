@@ -101,6 +101,11 @@ void DaemonClient::disconnectVpn()
 
 void DaemonClient::toggle()
 {
+    // While agvd reconnects after a drop, the button stops it (and frees a kill-switched network).
+    if (reconnecting()) {
+        disconnectVpn();
+        return;
+    }
     if (busy() || transitioning())
         return;
     if (connected())
@@ -415,6 +420,16 @@ void DaemonClient::setStartAtBoot(bool enabled)
 void DaemonClient::setAutoConnect(bool enabled)
 {
     call(QStringLiteral("SetAutoConnect"), {enabled});
+}
+
+void DaemonClient::setKillSwitch(bool enabled)
+{
+    call(QStringLiteral("SetKillSwitch"), {enabled});
+}
+
+void DaemonClient::setKillSwitchAllowLan(bool enabled)
+{
+    call(QStringLiteral("SetKillSwitchAllowLan"), {enabled});
 }
 
 void DaemonClient::refreshTunnelTraffic()

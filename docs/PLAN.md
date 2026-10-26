@@ -306,6 +306,19 @@ cgroup v2 → nftables `socket cgroupv2` → `meta mark` → `ip rule fwmark` �
    месяцам) в `statistics.cpp`; живая скорость — из счётчиков tun раз в секунду, график на Canvas.
    В SOCKS5 туннеля нет — трафик не считается, время подключения считается.
    ✗ Профили отложены: переключатели приложений и два режима покрывают сценарии.
+   ✓ Переподключение: `VpnService::wanted()` — VPN должен быть включён (был connected, никто не
+   отключал). Неожиданный обрыв → `Reconnecting`, попытки `connect` через 3/5/10/20/30/60 с, дальше
+   каждые 60 с; Disconnect их прекращает (во время попытки — отключает сразу после неё). Неудачный
+   ручной connect wanted не ставит и не повторяется.
+   ✓ Kill switch (настройка агента `kill_switch`, `kill_switch_allow_lan`): отдельная таблица
+   `inet agvd-killswitch`, пока wanted и режим TUN. Bypass: выпускает только tun, lo, cgroup agvd
+   (с ним CLI — для переподключения), помеченные исключённые приложения, link-local/DHCP, DNS от
+   systemd-resolved (если его cgroup есть), локальную сеть по настройке; остальное reject, в forward
+   тоже (контейнеры/ВМ). VPN-only: reject только помеченного трафика мимо tun. Снимается при остановке
+   agvd и `agvd --cleanup`; после падения агента таблица остаётся до перезапуска (без утечки).
+   D-Bus `KillSwitch`/`KillSwitchAllowLan`/`KillSwitchActive`/`Reconnecting`.
+   ✓ Уведомления (GUI, org.freedesktop.Notifications): обрыв, переподключение, блокировка kill switch;
+   ручные действия молчат; выключаются в настройках.
 7. Упаковка и тесты: Arch, Fedora, Ubuntu, Debian; Hyprland, KDE, GNOME.
    ✓ Автозапуск: GUI в трее при входе (XDG autostart, `--hidden`; на голых композиторах — exec-once),
    служба при загрузке (агент сам включает unit через D-Bus systemd: EnableUnitFiles + Reload, под

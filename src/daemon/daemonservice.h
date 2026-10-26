@@ -12,8 +12,10 @@
 namespace agv {
 
 class PolkitAuthorizer;
+class RoutingEngine;
 class AppExclusionService;
 class DaemonSettings;
+class KillSwitch;
 class StatsRecorder;
 class SystemdUnit;
 class VpnService;
@@ -36,6 +38,10 @@ class DaemonService : public QObject, protected QDBusContext
     Q_PROPERTY(QString AppExclusionMode READ appExclusionMode)
     Q_PROPERTY(bool StartAtBoot READ startAtBoot)
     Q_PROPERTY(bool AutoConnect READ autoConnect)
+    Q_PROPERTY(bool KillSwitch READ killSwitch)
+    Q_PROPERTY(bool KillSwitchAllowLan READ killSwitchAllowLan)
+    Q_PROPERTY(bool KillSwitchActive READ killSwitchActive)
+    Q_PROPERTY(bool Reconnecting READ reconnecting)
 
 public:
     DaemonService(VpnService *vpn, AppExclusionService *apps, PolkitAuthorizer *polkit,
@@ -53,11 +59,17 @@ public:
     QString appExclusionMode() const;
     bool startAtBoot() const;
     bool autoConnect() const;
+    bool killSwitch() const;
+    bool killSwitchAllowLan() const;
+    bool killSwitchActive() const;
+    bool reconnecting() const;
 
     // Optional: without them the startup properties read false and setting them fails.
     void setStartup(DaemonSettings *settings, SystemdUnit *unit);
     // Optional: without it GetStatistics answers an empty object.
     void setStatistics(StatsRecorder *stats) { m_stats = stats; }
+    // Optional: needs setStartup() too, where its setting lives. engine gives the cgroups.
+    void setKillSwitch(KillSwitch *killSwitch, RoutingEngine *engine);
 
 public slots:
     void Connect(const QString &location);
@@ -87,6 +99,8 @@ public slots:
     void SetAppExclusionMode(const QString &mode);
     void SetStartAtBoot(bool enabled);
     void SetAutoConnect(bool enabled);
+    void SetKillSwitch(bool enabled);
+    void SetKillSwitchAllowLan(bool enabled);
 
     QString GetStatistics();
     void ResetStatistics();
@@ -107,12 +121,17 @@ private:
     void replyDone(const QDBusMessage &message, const Error &error);
     void replyError(const QDBusMessage &message, const Error &error);
     void emitPropertiesChanged(const QStringList &names);
+    // Engages or releases the kill switch to match the setting and the VPN's state.
+    void syncKillSwitch();
+    void setSetting(const QDBusMessage &message, const QString &property, const std::function<void()> &change);
 
     VpnService *m_vpn;
     AppExclusionService *m_apps;
     DaemonSettings *m_settings = nullptr;
     SystemdUnit *m_unit = nullptr;
     StatsRecorder *m_stats = nullptr;
+    KillSwitch *m_killSwitch = nullptr;
+    RoutingEngine *m_engine = nullptr;
     PolkitAuthorizer *m_polkit;
     QDBusConnection m_bus;
     QVariantMap m_lastProperties;

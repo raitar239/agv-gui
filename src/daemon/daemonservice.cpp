@@ -2,6 +2,7 @@
 
 #include "appexclusionservice.h"
 #include "daemonsettings.h"
+#include "killswitch.h"
 #include "systemdunit.h"
 #include "polkitauthorizer.h"
 #include "statsrecorder.h"
@@ -11,6 +12,7 @@
 #include <QDBusMessage>
 #include <QDBusReply>
 #include <QFile>
+#include <QFileInfo>
 #include <QJsonDocument>
 
 #include <pwd.h>
@@ -22,7 +24,7 @@ namespace {
 const QStringList StatusProperties{
     QStringLiteral("State"),    QStringLiteral("Location"),  QStringLiteral("Mode"),
     QStringLiteral("TunDevice"), QStringLiteral("LastError"), QStringLiteral("LoggedIn"),
-    QStringLiteral("ExternalVpns"),
+    QStringLiteral("ExternalVpns"), QStringLiteral("Reconnecting"), QStringLiteral("KillSwitchActive"),
 };
 
 } // namespace
@@ -35,12 +37,16 @@ DaemonService::DaemonService(VpnService *vpn, AppExclusionService *apps, PolkitA
     , m_polkit(polkit)
     , m_bus(std::move(bus))
 {
-    connect(m_vpn, &VpnService::statusChanged, this, [this] { emitPropertiesChanged(StatusProperties); });
+    connect(m_vpn, &VpnService::statusChanged, this, [this] {
+        syncKillSwitch();
+        emitPropertiesChanged(StatusProperties);
+    });
     connect(m_vpn, &VpnService::siteExclusionsChanged, this, [this] {
         emitPropertiesChanged({QStringLiteral("SiteExclusionMode")});
         emit SiteExclusionsChanged();
     });
     connect(m_apps, &AppExclusionService::changed, this, [this] {
+        syncKillSwitch();
         emitPropertiesChanged({QStringLiteral("AppExclusionMode")});
         emit AppExclusionsChanged();
     });
@@ -87,19 +93,90 @@ void DaemonService::SetStartAtBoot(bool enabled)
 void DaemonService::SetAutoConnect(bool enabled)
 {
     authorized(ActionConfigure, [this, enabled](const QDBusMessage &message) {
-        if (!m_settings) {
-            replyError(message, {errors::NotSupported, QStringLiteral("Settings are not available")});
-            return;
-        }
-        m_settings->setAutoConnect(enabled);
-        if (!m_settings->save()) {
-            replyError(message, {errors::SystemFailed, QStringLiteral("Cannot save settings")});
-            return;
-        }
-        m_vpn->setAutoConnect(enabled);
-        emitPropertiesChanged({QStringLiteral("AutoConnect")});
-        replyDone(message, {});
+        setSetting(message, QStringLiteral("AutoConnect"), [this, enabled] {
+            m_settings->setAutoConnect(enabled);
+            m_vpn->setAutoConnect(enabled);
+        });
     });
+}
+
+void DaemonService::SetKillSwitch(bool enabled)
+{
+    authorized(ActionConfigure, [this, enabled](const QDBusMessage &message) {
+        if (!m_killSwitch) {
+            replyError(message, {errors::NotSupported, QStringLiteral("The kill switch needs nftables and cgroup v2")});
+            return;
+        }
+        setSetting(message, QStringLiteral("KillSwitch"), [this, enabled] { m_settings->setKillSwitch(enabled); });
+    });
+}
+
+void DaemonService::SetKillSwitchAllowLan(bool enabled)
+{
+    authorized(ActionConfigure, [this, enabled](const QDBusMessage &message) {
+        setSetting(message, QStringLiteral("KillSwitchAllowLan"),
+                   [this, enabled] { m_settings->setKillSwitchAllowLan(enabled); });
+    });
+}
+
+void DaemonService::setSetting(const QDBusMessage &message, const QString &property,
+                               const std::function<void()> &change)
+{
+    if (!m_settings) {
+        replyError(message, {errors::NotSupported, QStringLiteral("Settings are not available")});
+        return;
+    }
+    change();
+    if (!m_settings->save()) {
+        replyError(message, {errors::SystemFailed, QStringLiteral("Cannot save settings")});
+        return;
+    }
+    syncKillSwitch();
+    emitPropertiesChanged({property, QStringLiteral("KillSwitchActive")});
+    replyDone(message, {});
+}
+
+bool DaemonService::killSwitch() const { return m_killSwitch && m_settings && m_settings->killSwitch(); }
+bool DaemonService::killSwitchAllowLan() const { return !m_settings || m_settings->killSwitchAllowLan(); }
+bool DaemonService::reconnecting() const { return m_vpn->reconnecting(); }
+
+bool DaemonService::killSwitchActive() const
+{
+    return m_killSwitch && m_killSwitch->isEngaged() && m_vpn->state() != VpnService::State::Connected;
+}
+
+void DaemonService::setKillSwitch(KillSwitch *killSwitch, RoutingEngine *engine)
+{
+    m_killSwitch = killSwitch;
+    m_engine = engine;
+    syncKillSwitch();
+}
+
+void DaemonService::syncKillSwitch()
+{
+    if (!m_killSwitch)
+        return;
+    // SOCKS5 mode has no tunnel to keep traffic in: apps choose to use the proxy.
+    const bool socks = m_vpn->lastMode().compare(QLatin1String("socks"), Qt::CaseInsensitive) == 0;
+    if (!killSwitch() || !m_vpn->wanted() || socks) {
+        if (m_killSwitch->isEngaged())
+            m_killSwitch->release();
+        return;
+    }
+
+    KillSwitch::Options options;
+    if (!m_vpn->lastTunDevice().isEmpty())
+        options.tunDevice = m_vpn->lastTunDevice();
+    options.allowLan = killSwitchAllowLan();
+    options.mode = m_apps->mode() == QLatin1String("vpn-only") ? RoutingEngine::Mode::VpnOnly
+                                                                : RoutingEngine::Mode::Bypass;
+    options.ownCgroup = m_engine->ownCgroup();
+    // nftables needs the cgroup to exist when the rules load.
+    const QString resolved = QStringLiteral("system.slice/systemd-resolved.service");
+    if (QFileInfo::exists(m_engine->cgroupRoot() + QLatin1Char('/') + resolved))
+        options.resolvedCgroup = resolved;
+    if (!m_killSwitch->engage(options))
+        qWarning("agvd: kill switch: %s", qPrintable(m_killSwitch->lastError()));
 }
 
 AgvExternalVpnList DaemonService::externalVpns() const

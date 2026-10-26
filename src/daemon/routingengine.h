@@ -68,6 +68,9 @@ public:
     bool isSupported() const { return m_supported; }
     QString lastError() const { return m_lastError; }
     QString baseCgroup() const { return m_base; }
+    // The daemon's own cgroup ("system.slice/agvd.service"), where adguardvpn-cli runs too.
+    QString ownCgroup() const { return m_own; }
+    QString cgroupRoot() const { return m_paths.cgroupRoot; }
     // Absolute path of an exclusion group's cgroup directory.
     QString cgroupPath(const QString &appId) const { return cgroupDir(m_base + QLatin1Char('/') + appId); }
 

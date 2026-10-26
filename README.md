@@ -65,6 +65,16 @@ sudo scripts/dev-install.sh
 sudo scripts/dev-install.sh --uninstall
 ```
 
+## Kill switch
+
+With the kill switch on (Settings → Protection), agvd keeps traffic inside the VPN while it should
+be up, including while it reconnects after a drop. Turning the VPN off in AGV lifts it, and so
+does stopping agvd. If you are ever cut off and AGV does not respond:
+
+```sh
+sudo nft delete table inet agvd-killswitch
+```
+
 ## License
 
 [MIT](LICENSE). AGV is an independent project, not affiliated with or endorsed by AdGuard.

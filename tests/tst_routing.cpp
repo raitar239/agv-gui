@@ -1,5 +1,6 @@
 #include "appexclusionservice.h"
 #include "appstore.h"
+#include "killswitch.h"
 #include "routingengine.h"
 
 #include <QDir>
@@ -371,6 +372,58 @@ private slots:
         QCOMPARE(reloaded.rules().first().id, id);
         QCOMPARE(reloaded.rules().first().name, QStringLiteral("Genshin Impact"));
         QVERIFY(reloaded.rules().first().enabled);
+    }
+
+    void killSwitchBypass()
+    {
+        KillSwitch::Options options;
+        options.tunDevice = QStringLiteral("tun0");
+        options.ownCgroup = QStringLiteral("system.slice/agvd.service");
+        options.resolvedCgroup = QStringLiteral("system.slice/systemd-resolved.service");
+        const QString script = QString::fromUtf8(KillSwitch::buildRuleset(options));
+        QVERIFY(script.contains(QStringLiteral("oifname { \"lo\", \"tun0\" } accept")));
+        QVERIFY(script.contains(QStringLiteral("meta mark 0x61677664 accept")));
+        QVERIFY(script.contains(QStringLiteral("socket cgroupv2 level 2 \"system.slice/agvd.service\" accept")));
+        QVERIFY(script.contains(QStringLiteral("th dport 53 accept")));
+        QVERIFY(script.contains(QStringLiteral("192.168.0.0/16")));
+        QVERIFY(script.contains(QStringLiteral("chain forward")));
+        QVERIFY(script.trimmed().endsWith(QLatin1Char('}')));
+
+        options.allowLan = false;
+        options.tunDevice = QStringLiteral("evil\" accept");  // never trusted into the script
+        const QString strict = QString::fromUtf8(KillSwitch::buildRuleset(options));
+        QVERIFY(!strict.contains(QStringLiteral("192.168.0.0/16")));
+        QVERIFY(strict.contains(QStringLiteral("\"tun0\"")));
+        QVERIFY(!strict.contains(QStringLiteral("evil")));
+    }
+
+    void killSwitchVpnOnly()
+    {
+        KillSwitch::Options options;
+        options.mode = RoutingEngine::Mode::VpnOnly;
+        const QString script = QString::fromUtf8(KillSwitch::buildRuleset(options));
+        // Only the apps meant for the VPN are held back; the rest of the system goes out as usual.
+        QVERIFY(script.contains(QStringLiteral("meta mark 0x61677664 oifname != { \"lo\", \"tun0\" } counter reject")));
+        QVERIFY(!script.contains(QStringLiteral("chain forward")));
+    }
+
+    void killSwitchEngageAndRelease()
+    {
+        FakeCommands commands;
+        KillSwitch killSwitch(&commands);
+        KillSwitch::Options options;
+        QVERIFY(killSwitch.engage(options));
+        QVERIFY(killSwitch.isEngaged());
+        QVERIFY(killSwitch.engage(options));  // unchanged: not loaded again
+        QCOMPARE(commands.commands().count(QStringLiteral("nft -f -")), 1);
+        killSwitch.release();
+        QVERIFY(!killSwitch.isEngaged());
+        QCOMPARE(commands.commands().last(), QStringLiteral("nft delete table inet agvd-killswitch"));
+
+        commands.answers.insert(QStringLiteral("nft -f -"), {1, "Error: boom"});
+        QVERIFY(!killSwitch.engage(options));
+        QVERIFY(!killSwitch.isEngaged());
+        QVERIFY(killSwitch.lastError().contains(QStringLiteral("boom")));
     }
 
     void storePerMode()

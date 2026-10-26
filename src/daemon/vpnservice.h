@@ -41,6 +41,13 @@ public:
     QString lastError() const { return m_lastError; }
     bool loggedIn() const { return m_state != State::NotLoggedIn && m_state != State::Unknown; }
     QString siteExclusionMode() const { return m_siteExclusionMode; }
+    // The VPN should be up: it was connected and nobody asked to disconnect. A drop while this is
+    // true is unexpected; agvd reconnects (reconnecting()) and the kill switch keeps traffic in.
+    bool wanted() const { return m_wanted; }
+    bool reconnecting() const { return m_reconnecting; }
+    // From the last time it was connected: the tunnel's name ("tun0") and "TUN" or "SOCKS".
+    QString lastTunDevice() const { return m_lastTunDevice; }
+    QString lastMode() const { return m_lastMode; }
     // VPN instances started outside the daemon; only looked for while we are not connected.
     QList<ExternalVpn> externalVpns() const { return m_externalVpns; }
 
@@ -116,6 +123,11 @@ private:
     QString currentSiteMode() const;
     void schedulePoll();
     void tryAutoConnect();
+    // Follows connects and drops to keep wanted() and reconnecting() up to date.
+    void trackConnection();
+    void scheduleReconnect();
+    void reconnectNow();
+    void stopReconnecting();
     Error errorFor(const QStringList &args, int exitCode, const QString &output, bool timedOut,
                    bool failedToStart) const;
     void runChecked(const QStringList &args, std::function<void(const QString &, const Error &)> then,
@@ -124,6 +136,13 @@ private:
     CliRunner *m_cli;
     QTimer *m_poll;
     QTimer *m_autoConnectRetry;
+    QTimer *m_reconnect;
+    bool m_wanted = false;
+    bool m_reconnecting = false;
+    int m_reconnectAttempts = 0;
+    bool m_disconnectAfterAttempt = false;
+    QString m_lastTunDevice;
+    QString m_lastMode;
     bool m_autoConnect = false;
     int m_autoConnectAttempts = 0;
     QPointer<QProcess> m_login;

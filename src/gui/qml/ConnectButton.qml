@@ -9,6 +9,8 @@ Item {
     property bool connected: false
     property bool working: false
     property bool enabledState: true
+    // Clickable while working, to stop it (agvd reconnecting after a drop).
+    property bool stoppable: false
     property real diameter: 180
     // Whole, even pixel sizes: the software renderer clips circles with fractional sizes.
     readonly property int outer: 2 * Math.round(diameter / 2)
@@ -93,7 +95,7 @@ Item {
         width: face.width
         height: face.height
         hoverEnabled: true
-        enabled: root.enabledState && !root.working
+        enabled: root.enabledState && (!root.working || root.stoppable)
         cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: root.clicked()
     }

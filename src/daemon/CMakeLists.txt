@@ -16,6 +16,8 @@ add_library(agvd-core STATIC
     vpnservice.h
     vpnservice.cpp
     hostsystem.h
+    killswitch.h
+    killswitch.cpp
     hostsystem.cpp
     polkitauthorizer.h
     polkitauthorizer.cpp

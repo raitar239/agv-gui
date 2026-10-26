@@ -358,6 +358,55 @@ private slots:
                                                      {QStringLiteral("cs.a.com"), false}}));
     }
 
+    void reconnectsAfterADrop()
+    {
+        Scenario scenario;
+        scenario.respond(QStringLiteral("status"), fixture(QStringLiteral("status-connected.txt")));
+        scenario.respond(QStringLiteral("connect_-y_--no-progress"), QStringLiteral("Connected\n"));
+        scenario.respond(QStringLiteral("disconnect"), QStringLiteral("Disconnected\n"));
+        CliRunner cli(FakeCli, scenario.home());
+        VpnService vpn(&cli);
+
+        vpn.refreshStatus();
+        QTRY_COMPARE(vpn.state(), VpnService::State::Connected);
+        QVERIFY(vpn.wanted());
+        QCOMPARE(vpn.lastTunDevice(), QStringLiteral("tun0"));
+
+        // The tunnel goes away on its own: agvd notices and connects again a few seconds later.
+        scenario.respond(QStringLiteral("status"), fixture(QStringLiteral("status-disconnected.txt")));
+        vpn.refreshStatus();
+        QTRY_VERIFY(vpn.reconnecting());
+        QVERIFY(vpn.wanted());
+        scenario.respond(QStringLiteral("status"), fixture(QStringLiteral("status-connected.txt")));
+        QTRY_VERIFY_WITH_TIMEOUT(!vpn.reconnecting(), 10000);
+        QCOMPARE(vpn.state(), VpnService::State::Connected);
+        QVERIFY(scenario.calls().contains(QStringLiteral("connect|-y|--no-progress")));
+
+        // An explicit disconnect is not a drop.
+        scenario.respond(QStringLiteral("status"), fixture(QStringLiteral("status-disconnected.txt")));
+        std::optional<Error> error;
+        vpn.disconnectVpn([&](const Error &e) { error = e; });
+        QTRY_VERIFY(error.has_value());
+        QCOMPARE(vpn.state(), VpnService::State::Disconnected);
+        QVERIFY(!vpn.wanted());
+        QVERIFY(!vpn.reconnecting());
+    }
+
+    void failedConnectDoesNotRetry()
+    {
+        Scenario scenario;
+        scenario.respond(QStringLiteral("status"), fixture(QStringLiteral("status-disconnected.txt")));
+        scenario.respond(QStringLiteral("connect_-y_--no-progress"), QStringLiteral("Error: no network\n"), 1);
+        CliRunner cli(FakeCli, scenario.home());
+        VpnService vpn(&cli);
+        std::optional<Error> error;
+        vpn.connectTo(QString(), [&](const Error &e) { error = e; });
+        QTRY_VERIFY(error.has_value());
+        QVERIFY(!error->isOk());
+        QVERIFY(!vpn.wanted());
+        QVERIFY(!vpn.reconnecting());
+    }
+
     void strictFormatOnAdd()
     {
         Scenario scenario;

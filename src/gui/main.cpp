@@ -3,6 +3,7 @@
 #include "installedapps.h"
 #include "language.h"
 #include "locationmodel.h"
+#include "notifier.h"
 #include "systemtheme.h"
 #include "trayicon.h"
 #include "windowcontroller.h"
@@ -101,12 +102,14 @@ int main(int argc, char *argv[])
     // AGV_SESSION_BUS=1 talks to "agvd --session" during development.
     const bool sessionBus = qEnvironmentVariableIntValue("AGV_SESSION_BUS") == 1;
     DaemonClient daemon(sessionBus ? QDBusConnection::sessionBus() : QDBusConnection::systemBus());
+    Notifier notifier(&daemon);
     SystemTheme theme;
     Autostart autostart;
     registerShared("Daemon", &daemon);
     registerShared("SystemTheme", &theme);
     registerShared("Autostart", &autostart);
     registerShared("Language", &language);
+    registerShared("Notifier", &notifier);
     qmlRegisterType<InstalledApps>("Agv.Backend", 1, 0, "InstalledApps");
 
     const bool tray = !screenshot && TrayIcon::isAvailable();

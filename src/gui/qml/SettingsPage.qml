@@ -124,6 +124,42 @@ Item {
 
             VpnSettingsCard {}
 
+            // Protection
+            Card {
+                Layout.fillWidth: true
+                ColumnLayout {
+                    width: parent.width
+                    spacing: 14
+                    Text {
+                        text: qsTr("Protection")
+                        color: Theme.text
+                        font.pixelSize: Theme.fontBody
+                        font.weight: Font.DemiBold
+                    }
+                    SettingRow {
+                        title: qsTr("Kill switch")
+                        hint: qsTr("If the VPN drops, block the internet until it reconnects, so nothing leaves without it. Apps excluded from the VPN keep working. Turning the VPN off yourself unblocks it.")
+                        checked: Daemon.killSwitch
+                        available: Daemon.available && Daemon.appExclusionsSupported
+                        onToggled: (checked) => Daemon.setKillSwitch(checked)
+                    }
+                    SettingRow {
+                        visible: Daemon.killSwitch
+                        title: qsTr("Allow the local network")
+                        hint: qsTr("Printers, file shares and the router stay reachable while the internet is blocked.")
+                        checked: Daemon.killSwitchAllowLan
+                        available: Daemon.available
+                        onToggled: (checked) => Daemon.setKillSwitchAllowLan(checked)
+                    }
+                    SettingRow {
+                        title: qsTr("Notify when the connection drops")
+                        hint: qsTr("A desktop notification when the VPN is lost and when it is back.")
+                        checked: Notifier.enabled
+                        onToggled: (checked) => Notifier.enabled = checked
+                    }
+                }
+            }
+
             // Appearance
             Card {
                 Layout.fillWidth: true

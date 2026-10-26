@@ -11,7 +11,7 @@ Item {
     property bool showLocationButton: true
     signal openLocations()
 
-    readonly property bool working: Daemon.busy || Daemon.transitioning
+    readonly property bool working: Daemon.busy || Daemon.transitioning || Daemon.reconnecting
     readonly property bool vpnOnly: Daemon.appExclusionMode === "vpn-only"
     readonly property bool socks: Daemon.mode === "SOCKS"
     readonly property string proxy: {
@@ -61,6 +61,16 @@ Item {
                 Layout.fillWidth: true
             }
             Banner {
+                visible: Daemon.killSwitchActive
+                kind: "danger"
+                title: qsTr("The internet is blocked by the kill switch")
+                text: Daemon.reconnecting ? qsTr("The VPN dropped and is reconnecting. Turn it off to unblock the internet.")
+                                          : qsTr("The VPN is not connected. Turn it off to unblock the internet.")
+                actionText: qsTr("Turn off VPN")
+                onAction: Daemon.disconnectVpn()
+                Layout.fillWidth: true
+            }
+            Banner {
                 visible: Daemon.available && !Daemon.loggedIn && Daemon.state !== "unknown"
                 kind: "info"
                 title: qsTr("Sign in to AdGuard VPN")
@@ -76,6 +86,7 @@ Item {
                 connected: Daemon.connected
                 working: page.working
                 enabledState: Daemon.available && Daemon.loggedIn
+                stoppable: Daemon.reconnecting
                 onClicked: Daemon.toggle()
                 Layout.alignment: Qt.AlignHCenter
                 Layout.topMargin: page.compactHeight ? 0 : 8
@@ -85,7 +96,8 @@ Item {
                 spacing: 4
                 Layout.fillWidth: true
                 Text {
-                    text: page.working ? (Daemon.state === "disconnecting" ? qsTr("Disconnecting…") : qsTr("Connecting…"))
+                    text: Daemon.reconnecting ? qsTr("Reconnecting…")
+                        : page.working ? (Daemon.state === "disconnecting" ? qsTr("Disconnecting…") : qsTr("Connecting…"))
                                        : Daemon.connected ? (page.vpnOnly || page.socks ? qsTr("Connected") : qsTr("Protected"))
                                                           : qsTr("Not protected")
                     color: Daemon.connected && !page.working ? Theme.accent : Theme.text
@@ -96,6 +108,8 @@ Item {
                 }
                 Text {
                     text: {
+                        if (Daemon.reconnecting)
+                            return qsTr("The connection dropped. Press the button to stop trying.")
                         if (Daemon.state === "error" && Daemon.lastError !== "")
                             return Daemon.lastError
                         if (Daemon.connected && page.socks)
