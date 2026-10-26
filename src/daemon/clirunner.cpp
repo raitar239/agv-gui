@@ -86,6 +86,8 @@ void CliRunner::startNext()
         return;
 
     const Job &job = m_queue.head();
+    if (m_findProgram && !QFileInfo(m_program).isExecutable())
+        m_program = findProgram();
     m_timedOut = false;
     m_process = createProcess(job.args, this);
 

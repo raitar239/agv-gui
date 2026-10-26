@@ -407,6 +407,29 @@ private slots:
         QVERIFY(!vpn.reconnecting());
     }
 
+    void cliInfo()
+    {
+        Scenario scenario;
+        scenario.respond(QStringLiteral("--version"), QStringLiteral("AdGuard VPN CLI v1.8.1\n"));
+        CliRunner cli(FakeCli, scenario.home());
+        VpnService vpn(&cli);
+        vpn.refreshCliInfo();
+        QTRY_COMPARE(vpn.cliVersion(), QStringLiteral("1.8.1"));
+        QCOMPARE(vpn.cliInstall(), QStringLiteral("other"));
+
+        // Only AdGuard's own installer updates itself.
+        std::optional<Error> error;
+        vpn.updateCli([&](const Error &e) { error = e; });
+        QTRY_VERIFY(error.has_value());
+        QCOMPARE(error->name, errors::NotSupported);
+
+        CliRunner missing(QStringLiteral("/nonexistent/adguardvpn-cli"), scenario.home());
+        VpnService nothing(&missing);
+        nothing.refreshCliInfo();
+        QTRY_COMPARE(nothing.cliInstall(), QStringLiteral("missing"));
+        QVERIFY(nothing.cliVersion().isEmpty());
+    }
+
     void strictFormatOnAdd()
     {
         Scenario scenario;

@@ -432,6 +432,14 @@ void DaemonClient::setKillSwitchAllowLan(bool enabled)
     call(QStringLiteral("SetKillSwitchAllowLan"), {enabled});
 }
 
+void DaemonClient::updateCli()
+{
+    call(QStringLiteral("UpdateCli"), {}, [this](const QDBusMessage &) {
+        emit info(connected() ? tr("AdGuard VPN CLI is updated. Reconnect to start using it.")
+                              : tr("AdGuard VPN CLI is updated."));
+    }, true);
+}
+
 void DaemonClient::setKeepDnsInVpn(bool enabled)
 {
     call(QStringLiteral("SetKeepDnsInVpn"), {enabled});

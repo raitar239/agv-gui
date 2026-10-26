@@ -44,6 +44,8 @@ class DaemonService : public QObject, protected QDBusContext
     Q_PROPERTY(bool KillSwitchActive READ killSwitchActive)
     Q_PROPERTY(bool KeepDnsInVpn READ keepDnsInVpn)
     Q_PROPERTY(bool Reconnecting READ reconnecting)
+    Q_PROPERTY(QString CliVersion READ cliVersion)
+    Q_PROPERTY(QString CliInstall READ cliInstall)
 
 public:
     DaemonService(VpnService *vpn, AppExclusionService *apps, PolkitAuthorizer *polkit,
@@ -66,6 +68,8 @@ public:
     bool killSwitchActive() const;
     bool keepDnsInVpn() const;
     bool reconnecting() const;
+    QString cliVersion() const;
+    QString cliInstall() const;
 
     // Optional: without them the startup properties read false and setting them fails.
     void setStartup(DaemonSettings *settings, SystemdUnit *unit);
@@ -105,6 +109,7 @@ public slots:
     void SetKillSwitch(bool enabled);
     void SetKillSwitchAllowLan(bool enabled);
     void SetKeepDnsInVpn(bool enabled);
+    void UpdateCli();
 
     QString GetStatistics();
     void ResetStatistics();

@@ -136,6 +136,7 @@ int main(int argc, char *argv[])
     }
 
     CliRunner cli(cliPath, dataDir);
+    cli.setFindProgram(!parser.isSet(cliOption));
     VpnService vpn(&cli);
     AppStore appStore(dataDir + QStringLiteral("/app-exclusions.json"));
     AppExclusionService apps(&appStore, &routing);

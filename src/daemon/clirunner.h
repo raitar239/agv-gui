@@ -49,6 +49,9 @@ public:
 
     // Looks for adguardvpn-cli in the usual install locations, then in PATH.
     static QString findProgram();
+    // Looks again before each command while the program is missing, so installing the CLI later
+    // needs no restart. Off when the path was given explicitly.
+    void setFindProgram(bool on) { m_findProgram = on; }
 
 private:
     struct Job {
@@ -61,6 +64,7 @@ private:
     void finish(Result result);
 
     QString m_program;
+    bool m_findProgram = false;
     QString m_home;
     QQueue<Job> m_queue;
     QProcess *m_process = nullptr;

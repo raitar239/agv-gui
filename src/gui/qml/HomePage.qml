@@ -74,6 +74,20 @@ Item {
                 Layout.fillWidth: true
             }
             Banner {
+                id: cliBanner
+                property bool copied: false
+                visible: Daemon.available && Daemon.cliInstall === "missing"
+                kind: "danger"
+                title: qsTr("AdGuard VPN CLI is not installed")
+                text: qsTr("AGV controls the official adguardvpn-cli. Install it in a terminal with AdGuard's script, and AGV finds it on its own.")
+                actionText: copied ? qsTr("Copied") : qsTr("Copy install command")
+                onAction: {
+                    Autostart.copyToClipboard("curl -fsSL https://raw.githubusercontent.com/AdguardTeam/AdGuardVPNCLI/master/scripts/release/install.sh | sh -s -- -v")
+                    copied = true
+                }
+                Layout.fillWidth: true
+            }
+            Banner {
                 visible: Daemon.killSwitchActive
                 kind: "danger"
                 title: qsTr("The internet is blocked by the kill switch")

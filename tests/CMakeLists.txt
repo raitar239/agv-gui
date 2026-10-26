@@ -65,6 +65,11 @@ if(AGV_BUILD_GUI)
     target_link_libraries(tst_leakcheck PRIVATE Qt6::Network Qt6::Test)
     add_test(NAME leakcheck COMMAND tst_leakcheck)
 
+    add_executable(tst_cliupdates tst_cliupdates.cpp ${PROJECT_SOURCE_DIR}/src/gui/cliupdates.cpp)
+    target_include_directories(tst_cliupdates PRIVATE ${PROJECT_SOURCE_DIR}/src/gui)
+    target_link_libraries(tst_cliupdates PRIVATE Qt6::Network Qt6::Test)
+    add_test(NAME cliupdates COMMAND tst_cliupdates)
+
     # The real GUI, offscreen: a window is opened, closed and opened again in one process (as the
     # tray does), then rendered. Any QML error on the way fails the test.
     add_test(NAME gui_reopen

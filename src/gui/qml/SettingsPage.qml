@@ -9,6 +9,10 @@ Item {
 
     signal copied()
 
+    // AdGuard's official installer (github.com/AdguardTeam/AdGuardVPNCLI).
+    readonly property string cliInstallCommand:
+        "curl -fsSL https://raw.githubusercontent.com/AdguardTeam/AdGuardVPNCLI/master/scripts/release/install.sh | sh -s -- -v"
+
     Flickable {
         anchors.fill: parent
         contentHeight: column.implicitHeight + 2 * Theme.spacing
@@ -325,6 +329,71 @@ Item {
                         text: qsTr("agv-gui %1").arg(Qt.application.version)
                         color: Theme.textSecondary
                         font.pixelSize: Theme.fontSmall
+                    }
+
+                    // The CLI underneath, and its updates.
+                    RowLayout {
+                        id: cliRow
+                        readonly property bool outdated: Daemon.cliVersion !== ""
+                                                         && CliUpdates.isNewer(Daemon.cliVersion, CliUpdates.latest)
+                        visible: Daemon.available && Daemon.cliInstall !== ""
+                        spacing: 12
+                        Layout.fillWidth: true
+                        Layout.topMargin: 6
+                        ColumnLayout {
+                            spacing: 2
+                            Layout.fillWidth: true
+                            Text {
+                                text: Daemon.cliInstall === "missing" ? qsTr("AdGuard VPN CLI is not installed")
+                                                                      : qsTr("AdGuard VPN CLI %1").arg(Daemon.cliVersion)
+                                color: Daemon.cliInstall === "missing" ? Theme.danger : Theme.text
+                                font.pixelSize: Theme.fontBody
+                            }
+                            Text {
+                                text: {
+                                    if (Daemon.cliInstall === "missing")
+                                        return qsTr("AGV needs it to connect. Install it, and AGV finds it on its own.")
+                                    if (cliRow.outdated)
+                                        return Daemon.cliInstall === "script"
+                                            ? qsTr("Version %1 is available.").arg(CliUpdates.latest)
+                                            : qsTr("Version %1 is available. Update it with your package manager.").arg(CliUpdates.latest)
+                                    if (CliUpdates.checking)
+                                        return qsTr("Checking for updates…")
+                                    return CliUpdates.latest !== "" ? qsTr("Up to date") : ""
+                                }
+                                visible: text !== ""
+                                color: cliRow.outdated ? Theme.accent : Theme.textSecondary
+                                font.pixelSize: Theme.fontSmall
+                                wrapMode: Text.Wrap
+                                Layout.fillWidth: true
+                            }
+                        }
+                        FlatButton {
+                            visible: cliRow.outdated && Daemon.cliInstall === "script"
+                            kind: "primary"
+                            compact: true
+                            text: qsTr("Update")
+                            enabled: !Daemon.busy
+                            onClicked: Daemon.updateCli()
+                        }
+                        FlatButton {
+                            visible: Daemon.cliInstall === "missing"
+                            kind: "secondary"
+                            compact: true
+                            text: qsTr("Copy install command")
+                            onClicked: {
+                                Autostart.copyToClipboard(page.cliInstallCommand)
+                                page.copied()
+                            }
+                        }
+                        FlatButton {
+                            visible: !cliRow.outdated && Daemon.cliInstall !== "missing"
+                            kind: "subtle"
+                            compact: true
+                            iconName: "refresh"
+                            enabled: !CliUpdates.checking
+                            onClicked: CliUpdates.check()
+                        }
                     }
                 }
             }

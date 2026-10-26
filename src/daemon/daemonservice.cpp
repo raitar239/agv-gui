@@ -26,6 +26,7 @@ const QStringList StatusProperties{
     QStringLiteral("State"),    QStringLiteral("Location"),  QStringLiteral("Mode"),
     QStringLiteral("TunDevice"), QStringLiteral("LastError"), QStringLiteral("LoggedIn"),
     QStringLiteral("ExternalVpns"), QStringLiteral("Reconnecting"), QStringLiteral("KillSwitchActive"),
+    QStringLiteral("CliVersion"), QStringLiteral("CliInstall"),
 };
 
 } // namespace
@@ -147,6 +148,15 @@ void DaemonService::setSetting(const QDBusMessage &message, const QString &prope
 bool DaemonService::killSwitch() const { return m_killSwitch && m_settings && m_settings->killSwitch(); }
 bool DaemonService::killSwitchAllowLan() const { return !m_settings || m_settings->killSwitchAllowLan(); }
 bool DaemonService::reconnecting() const { return m_vpn->reconnecting(); }
+QString DaemonService::cliVersion() const { return m_vpn->cliVersion(); }
+QString DaemonService::cliInstall() const { return m_vpn->cliInstall(); }
+
+void DaemonService::UpdateCli()
+{
+    authorized(ActionConfigure, [this](const QDBusMessage &message) {
+        m_vpn->updateCli([this, message](const Error &error) { replyDone(message, error); });
+    });
+}
 bool DaemonService::keepDnsInVpn() const { return m_dnsGuard && (!m_settings || m_settings->keepDnsInVpn()); }
 
 bool DaemonService::killSwitchActive() const

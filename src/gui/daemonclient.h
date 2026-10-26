@@ -54,6 +54,9 @@ class DaemonClient : public QObject
     Q_PROPERTY(bool killSwitchActive READ killSwitchActive NOTIFY statusChanged)
     // The VPN dropped and agvd is connecting again.
     Q_PROPERTY(bool reconnecting READ reconnecting NOTIFY statusChanged)
+    // The installed adguardvpn-cli: "1.8.1", and "script", "package", "other" or "missing".
+    Q_PROPERTY(QString cliVersion READ cliVersion NOTIFY statusChanged)
+    Q_PROPERTY(QString cliInstall READ cliInstall NOTIFY statusChanged)
     // Bytes through the tunnel since it came up; refreshed by refreshTunnelTraffic().
     // False in SOCKS5 mode: there is no tunnel whose traffic could be counted.
     Q_PROPERTY(bool hasTunnel READ hasTunnel NOTIFY statusChanged)
@@ -100,6 +103,8 @@ public:
     bool killSwitchAllowLan() const { return m_props.value(QStringLiteral("KillSwitchAllowLan"), true).toBool(); }
     bool keepDnsInVpn() const { return m_props.value(QStringLiteral("KeepDnsInVpn")).toBool(); }
     bool killSwitchActive() const { return m_props.value(QStringLiteral("KillSwitchActive")).toBool(); }
+    QString cliVersion() const { return m_props.value(QStringLiteral("CliVersion")).toString(); }
+    QString cliInstall() const { return m_props.value(QStringLiteral("CliInstall")).toString(); }
     bool reconnecting() const { return m_props.value(QStringLiteral("Reconnecting")).toBool(); }
     QVariantMap config() const { return m_config; }
     bool needsReconnect() const { return m_needsReconnect && connected(); }
@@ -155,6 +160,7 @@ public:
     Q_INVOKABLE void setKillSwitch(bool enabled);
     Q_INVOKABLE void setKillSwitchAllowLan(bool enabled);
     Q_INVOKABLE void setKeepDnsInVpn(bool enabled);
+    Q_INVOKABLE void updateCli();
     // Reads the tunnel interface counters from sysfs (cheap; called by the UI while visible).
     Q_INVOKABLE void refreshTunnelTraffic();
 

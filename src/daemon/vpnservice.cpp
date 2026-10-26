@@ -102,6 +102,7 @@ QString VpnService::stateName() const
 
 void VpnService::start()
 {
+    refreshCliInfo();
     refreshStatus([this](const Error &) {
         refreshSiteExclusionMode();
         tryAutoConnect();
@@ -169,6 +170,9 @@ void VpnService::refreshStatus(Done done)
         }
 
         updateExternalVpns();
+        // Notice an install made while agvd runs.
+        if (m_cliInstall == QLatin1String("missing") && !result.failedToStart)
+            refreshCliInfo();
         schedulePoll();
         if (done)
             done(error);
@@ -709,6 +713,44 @@ void VpnService::setStatus(State state, const QString &location, const QString &
     m_tunDevice = tunDevice;
     trackConnection();
     emit statusChanged();
+}
+
+void VpnService::refreshCliInfo()
+{
+    m_cli->run({QStringLiteral("--version")}, [this](const CliRunner::Result &result) {
+        static const QRegularExpression version(QStringLiteral("v?(\\d+\\.\\d+\\.\\d+)"));
+        const QString path = QFileInfo(m_cli->program()).canonicalFilePath();
+        QString install;
+        QString number;
+        if (result.failedToStart || path.isEmpty()) {
+            install = QStringLiteral("missing");
+        } else {
+            number = version.match(result.output).captured(1);
+            if (path.startsWith(QLatin1String("/opt/adguardvpn_cli/")))
+                install = QStringLiteral("script");
+            else if (path.startsWith(QLatin1String("/usr/bin/")) || path.startsWith(QLatin1String("/usr/lib")))
+                install = QStringLiteral("package");
+            else
+                install = QStringLiteral("other");
+        }
+        if (install != m_cliInstall || number != m_cliVersion) {
+            m_cliInstall = install;
+            m_cliVersion = number;
+            emit statusChanged();
+        }
+    });
+}
+
+void VpnService::updateCli(Done done)
+{
+    if (m_cliInstall != QLatin1String("script")) {
+        done({errors::NotSupported, QStringLiteral("This adguardvpn-cli was installed by a package; update it with the package manager")});
+        return;
+    }
+    runChecked({QStringLiteral("update"), QStringLiteral("-y")}, [this, done](const QString &, const Error &error) {
+        refreshCliInfo();
+        done(error);
+    }, 5 * 60'000);
 }
 
 void VpnService::trackConnection()

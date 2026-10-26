@@ -195,6 +195,13 @@
     <!-- The VPN dropped and agvd is connecting again; Disconnect stops it -->
     <property name="Reconnecting" type="b" access="read"/>
 
+    <!-- The installed adguardvpn-cli: version ("1.8.1") and how it was installed: "script"
+         (AdGuard's installer, can update itself), "package", "other" or "missing" -->
+    <property name="CliVersion" type="s" access="read"/>
+    <property name="CliInstall" type="s" access="read"/>
+    <!-- Runs "adguardvpn-cli update -y"; only for script installs -->
+    <method name="UpdateCli"/>
+
     <!-- When agvd starts, connect to the last used location, retrying while the network comes up -->
     <property name="AutoConnect" type="b" access="read"/>
     <method name="SetAutoConnect">

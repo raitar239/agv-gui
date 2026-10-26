@@ -47,6 +47,14 @@ public:
     bool reconnecting() const { return m_reconnecting; }
     // From the last time it was connected: the tunnel's name ("tun0") and "TUN" or "SOCKS".
     QString lastTunDevice() const { return m_lastTunDevice; }
+    // "1.8.1", empty while unknown or missing.
+    QString cliVersion() const { return m_cliVersion; }
+    // How the CLI got here: "script" (AdGuard's installer, /opt/adguardvpn_cli; it can update
+    // itself), "package" (a distribution or AUR package), "other", or "missing".
+    QString cliInstall() const { return m_cliInstall; }
+    void refreshCliInfo();
+    // Runs the CLI's own updater; only for script installs.
+    void updateCli(Done done);
     QString lastMode() const { return m_lastMode; }
     // VPN instances started outside the daemon; only looked for while we are not connected.
     QList<ExternalVpn> externalVpns() const { return m_externalVpns; }
@@ -143,6 +151,8 @@ private:
     bool m_disconnectAfterAttempt = false;
     QString m_lastTunDevice;
     QString m_lastMode;
+    QString m_cliVersion;
+    QString m_cliInstall;
     bool m_autoConnect = false;
     int m_autoConnectAttempts = 0;
     QPointer<QProcess> m_login;

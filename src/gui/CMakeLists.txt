@@ -14,6 +14,8 @@ qt_add_executable(agv-gui
     keyedlistmodel.cpp
     locationmodel.h
     locationmodel.cpp
+    cliupdates.h
+    cliupdates.cpp
     leakcheck.h
     leakcheck.cpp
     notifier.h

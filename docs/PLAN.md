@@ -325,6 +325,11 @@ cgroup v2 → nftables `socket cgroupv2` → `meta mark` → `ip rule fwmark` �
    tun, там отвечает CLI) + masquerade на tun; loopback-резолверы не трогаются.
    ✓ Проверка утечек по кнопке на главной (bash.ws: id → 6 резолвов через системный резолвер → отчёт):
    внешний IP, DNS-серверы; утечка — если DNS не AdGuard и не в той же сети/стране, что выход VPN.
+   ✓ CLI: агент сообщает `CliVersion` и `CliInstall` (script — установщик AdGuard в /opt/adguardvpn_cli,
+   умеет `update -y` через `UpdateCli`; package — /usr/bin, обновлять пакетным менеджером; missing).
+   Пока CLI нет, CliRunner ищет его перед каждой командой — установка не требует перезапуска агента.
+   GUI раз в сутки берёт последний релиз с GitHub (`releases/latest`, тег `v1.8.1-release`); баннер
+   с командой установки, если CLI нет. `check-update` CLI без терминала молчит — не используется.
    ✓ Уведомления (GUI, org.freedesktop.Notifications): обрыв, переподключение, блокировка kill switch;
    ручные действия молчат; выключаются в настройках.
 7. Упаковка и тесты: Arch, Fedora, Ubuntu, Debian; Hyprland, KDE, GNOME.
