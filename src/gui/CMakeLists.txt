@@ -14,6 +14,8 @@ qt_add_executable(agv-gui
     keyedlistmodel.cpp
     locationmodel.h
     locationmodel.cpp
+    statistics.h
+    statistics.cpp
     systemtheme.h
     systemtheme.cpp
     trayicon.h
@@ -56,6 +58,9 @@ qt_add_qml_module(agv-gui
         qml/LocationsPage.qml
         qml/ExclusionsPage.qml
         qml/SettingsPage.qml
+        qml/StatisticsPage.qml
+        qml/BarChart.qml
+        qml/SpeedChart.qml
 )
 
 target_link_libraries(agv-gui PRIVATE

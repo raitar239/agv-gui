@@ -158,6 +158,15 @@
     </method>
     <signal name="AppExclusionsChanged"/>
 
+    <!-- Traffic and connection history as JSON: {days: {"yyyy-MM-dd": {in, out, seconds,
+         connections, locations: {name: {in, out, seconds}}, apps: {id: {in, out}}}},
+         hours: {epoch: {in, out, seconds}}, sessions: [{start, end, location, in, out, seconds}],
+         current: {...}, apps: {id: {name, icon}}, since}. Only the caller's own apps. -->
+    <method name="GetStatistics">
+      <arg name="json" type="s" direction="out"/>
+    </method>
+    <method name="ResetStatistics"/>
+
     <!-- Startup (org.agv.daemon.configure) -->
 
     <!-- agvd.service starts at boot -->

@@ -4,6 +4,7 @@
 
 #include <QDBusConnection>
 #include <QHash>
+#include <QJsonObject>
 #include <QObject>
 #include <QPair>
 #include <QStringList>
@@ -47,6 +48,8 @@ class DaemonClient : public QObject
     Q_PROPERTY(bool needsReconnect READ needsReconnect NOTIFY configChanged)
     Q_PROPERTY(bool autoConnect READ autoConnect NOTIFY statusChanged)
     // Bytes through the tunnel since it came up; refreshed by refreshTunnelTraffic().
+    // False in SOCKS5 mode: there is no tunnel whose traffic could be counted.
+    Q_PROPERTY(bool hasTunnel READ hasTunnel NOTIFY statusChanged)
     Q_PROPERTY(double tunnelBytesIn READ tunnelBytesIn NOTIFY tunnelTrafficChanged)
     Q_PROPERTY(double tunnelBytesOut READ tunnelBytesOut NOTIFY tunnelTrafficChanged)
     Q_PROPERTY(QVariantMap license READ license NOTIFY licenseChanged)
@@ -58,6 +61,9 @@ class DaemonClient : public QObject
     // The same lists as models that update row by row, so views keep their scroll position.
     Q_PROPERTY(QObject *siteExclusionModel READ siteExclusionModel CONSTANT)
     Q_PROPERTY(QObject *appModel READ appModel CONSTANT)
+    // Bumped whenever new statistics arrive; false availability means an agvd without them.
+    Q_PROPERTY(int statisticsRevision READ statisticsRevision NOTIFY statisticsChanged)
+    Q_PROPERTY(bool statisticsAvailable READ statisticsAvailable NOTIFY statisticsChanged)
 
 public:
     explicit DaemonClient(QDBusConnection bus, QObject *parent = nullptr);
@@ -85,6 +91,7 @@ public:
     bool autoConnect() const { return m_props.value(QStringLiteral("AutoConnect")).toBool(); }
     QVariantMap config() const { return m_config; }
     bool needsReconnect() const { return m_needsReconnect && connected(); }
+    bool hasTunnel() const { return !m_props.value(QStringLiteral("TunDevice")).toString().isEmpty(); }
     double tunnelBytesIn() const { return m_tunnelIn; }
     double tunnelBytesOut() const { return m_tunnelOut; }
     QVariantMap license() const { return m_license; }
@@ -95,6 +102,8 @@ public:
     QObject *siteExclusionModel() const;
     QObject *appModel() const;
     LocationModel *locationModel() const { return m_locations; }
+    int statisticsRevision() const { return m_statisticsRevision; }
+    bool statisticsAvailable() const { return m_statisticsAvailable; }
 
     // Connects to a location (city, country or ISO code; empty: the last used one).
     Q_INVOKABLE void connectTo(const QString &location = QString());
@@ -140,6 +149,11 @@ public:
     Q_INVOKABLE void logout();
     Q_INVOKABLE void importLogin();
 
+    Q_INVOKABLE void refreshStatistics();
+    Q_INVOKABLE void resetStatistics();
+    // Totals, chart, locations, apps and sessions for "today", "week", "month" or "all".
+    Q_INVOKABLE QVariantMap statisticsFor(const QString &period) const;
+
 signals:
     void availableChanged();
     void statusChanged();
@@ -150,6 +164,7 @@ signals:
     void tunnelTrafficChanged();
     void configChanged();
     void loginPendingChanged();
+    void statisticsChanged();
     void errorOccurred(const QString &message);
     void info(const QString &message);
 
@@ -193,6 +208,9 @@ private:
     double m_tunnelIn = 0;
     double m_tunnelOut = 0;
     bool m_loginPending = false;
+    QJsonObject m_statistics;
+    int m_statisticsRevision = 0;
+    bool m_statisticsAvailable = true;
 };
 
 } // namespace agv

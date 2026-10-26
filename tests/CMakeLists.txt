@@ -29,6 +29,10 @@ add_executable(tst_routing tst_routing.cpp)
 target_link_libraries(tst_routing PRIVATE agvd-core Qt6::Test)
 add_test(NAME routing COMMAND tst_routing)
 
+add_executable(tst_stats tst_stats.cpp)
+target_link_libraries(tst_stats PRIVATE agvd-core Qt6::Test)
+add_test(NAME stats COMMAND tst_stats)
+
 add_executable(tst_agvrun tst_agvrun.cpp)
 target_link_libraries(tst_agvrun PRIVATE agvd-core Qt6::Test)
 target_compile_definitions(tst_agvrun PRIVATE AGV_RUN_BINARY="$<TARGET_FILE:agv-run>")
@@ -50,6 +54,11 @@ if(AGV_BUILD_GUI)
     # Gui: QAbstractItemModelTester checks the decoration role for QPixmap/QIcon values.
     target_link_libraries(tst_keyedlistmodel PRIVATE Qt6::Gui Qt6::Test)
     add_test(NAME keyedlistmodel COMMAND tst_keyedlistmodel)
+
+    add_executable(tst_statistics tst_statistics.cpp ${PROJECT_SOURCE_DIR}/src/gui/statistics.cpp)
+    target_include_directories(tst_statistics PRIVATE ${PROJECT_SOURCE_DIR}/src/gui)
+    target_link_libraries(tst_statistics PRIVATE Qt6::Core Qt6::Test)
+    add_test(NAME statistics COMMAND tst_statistics)
 
     # The real GUI, offscreen: a window is opened, closed and opened again in one process (as the
     # tray does), then rendered. Any QML error on the way fails the test.

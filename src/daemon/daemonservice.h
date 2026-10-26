@@ -14,6 +14,7 @@ namespace agv {
 class PolkitAuthorizer;
 class AppExclusionService;
 class DaemonSettings;
+class StatsRecorder;
 class SystemdUnit;
 class VpnService;
 struct Error;
@@ -55,6 +56,8 @@ public:
 
     // Optional: without them the startup properties read false and setting them fails.
     void setStartup(DaemonSettings *settings, SystemdUnit *unit);
+    // Optional: without it GetStatistics answers an empty object.
+    void setStatistics(StatsRecorder *stats) { m_stats = stats; }
 
 public slots:
     void Connect(const QString &location);
@@ -85,6 +88,9 @@ public slots:
     void SetStartAtBoot(bool enabled);
     void SetAutoConnect(bool enabled);
 
+    QString GetStatistics();
+    void ResetStatistics();
+
     AgvConfigMap GetConfig();
     void SetConfig(const QString &key, const QString &value);
 
@@ -106,6 +112,7 @@ private:
     AppExclusionService *m_apps;
     DaemonSettings *m_settings = nullptr;
     SystemdUnit *m_unit = nullptr;
+    StatsRecorder *m_stats = nullptr;
     PolkitAuthorizer *m_polkit;
     QDBusConnection m_bus;
     QVariantMap m_lastProperties;

@@ -4,12 +4,14 @@
 #include "daemonsettings.h"
 #include "systemdunit.h"
 #include "polkitauthorizer.h"
+#include "statsrecorder.h"
 #include "vpnservice.h"
 
 #include <QDBusConnectionInterface>
 #include <QDBusMessage>
 #include <QDBusReply>
 #include <QFile>
+#include <QJsonDocument>
 
 #include <pwd.h>
 
@@ -269,6 +271,22 @@ void DaemonService::RemoveSiteExclusions(const QStringList &items)
 {
     authorized(ActionControl, [this, items](const QDBusMessage &message) {
         m_vpn->removeSiteExclusions(items, [this, message](const Error &error) { replyDone(message, error); });
+    });
+}
+
+QString DaemonService::GetStatistics()
+{
+    if (!m_stats)
+        return QStringLiteral("{}");
+    return QString::fromUtf8(QJsonDocument(m_stats->report(callerUid(message()))).toJson(QJsonDocument::Compact));
+}
+
+void DaemonService::ResetStatistics()
+{
+    authorized(ActionControl, [this](const QDBusMessage &message) {
+        if (m_stats)
+            m_stats->reset();
+        replyDone(message, {});
     });
 }
 

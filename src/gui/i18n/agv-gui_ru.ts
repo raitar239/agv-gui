@@ -65,6 +65,19 @@
     </message>
 </context>
 <context>
+    <name>BarChart</name>
+    <message>
+        <location filename="../qml/BarChart.qml" line="170"/>
+        <source>Download %1</source>
+        <translation>Загрузка %1</translation>
+    </message>
+    <message>
+        <location filename="../qml/BarChart.qml" line="179"/>
+        <source>Upload %1</source>
+        <translation>Отдача %1</translation>
+    </message>
+</context>
+<context>
     <name>ExclusionsPage</name>
     <message>
         <location filename="../qml/ExclusionsPage.qml" line="41"/>
@@ -468,17 +481,27 @@
     </message>
     <message>
         <location filename="../qml/Main.qml" line="21"/>
+        <source>Statistics</source>
+        <translation>Статистика</translation>
+    </message>
+    <message>
         <location filename="../qml/Main.qml" line="21"/>
+        <source>Stats</source>
+        <translation>Статистика</translation>
+    </message>
+    <message>
+        <location filename="../qml/Main.qml" line="22"/>
+        <location filename="../qml/Main.qml" line="22"/>
         <source>Settings</source>
         <translation>Настройки</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="28"/>
+        <location filename="../qml/Main.qml" line="29"/>
         <source>AGV — Protected</source>
         <translation>AGV — Защищено</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="100"/>
+        <location filename="../qml/Main.qml" line="102"/>
         <source>Copied to the clipboard</source>
         <translation>Скопировано в буфер обмена</translation>
     </message>
@@ -627,31 +650,257 @@
     </message>
 </context>
 <context>
+    <name>StatisticsPage</name>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="54"/>
+        <source>Unknown location</source>
+        <translation>Неизвестная локация</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="66"/>
+        <source>Started with agv-run</source>
+        <translation>Запущено через agv-run</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="249"/>
+        <source>Statistics</source>
+        <translation>Статистика</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="256"/>
+        <source>Today</source>
+        <translation>Сегодня</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="257"/>
+        <source>7 days</source>
+        <translation>7 дней</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="258"/>
+        <source>30 days</source>
+        <translation>30 дней</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="259"/>
+        <source>All time</source>
+        <translation>Всё время</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="269"/>
+        <source>Statistics need a newer agvd</source>
+        <translation>Для статистики нужен обновлённый agvd</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="270"/>
+        <source>Restart the AGV service after updating: sudo systemctl restart agvd</source>
+        <translation>Перезапустите службу AGV после обновления: sudo systemctl restart agvd</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="297"/>
+        <source>Now</source>
+        <translation>Сейчас</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="297"/>
+        <source>Not connected</source>
+        <translation>Не подключено</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="316"/>
+        <location filename="../qml/StatisticsPage.qml" line="420"/>
+        <source>Download</source>
+        <translation>Загрузка</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="326"/>
+        <location filename="../qml/StatisticsPage.qml" line="421"/>
+        <source>Upload</source>
+        <translation>Отдача</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="338"/>
+        <source>Traffic is not counted in SOCKS5 mode: there is no tunnel to measure. Connected time still is.</source>
+        <translation>В режиме SOCKS5 трафик не считается: нет туннеля, который можно измерить. Время подключения считается.</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="339"/>
+        <source>Connect to see the speed and this session here.</source>
+        <translation>Подключитесь, чтобы видеть здесь скорость и текущий сеанс.</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="351"/>
+        <source>This session: %1 · ↓ %2 ↑ %3</source>
+        <translation>Этот сеанс: %1 · ↓ %2 ↑ %3</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="382"/>
+        <source>Through the VPN</source>
+        <translation>Через VPN</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="388"/>
+        <source>Connected</source>
+        <translation>Подключено</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../qml/StatisticsPage.qml" line="390"/>
+        <source>%n connection(s)</source>
+        <translation>
+            <numerusform>%n подключение</numerusform>
+            <numerusform>%n подключения</numerusform>
+            <numerusform>%n подключений</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="394"/>
+        <source>Busiest hour</source>
+        <translation>Самый активный час</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="395"/>
+        <source>Busiest month</source>
+        <translation>Самый активный месяц</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="395"/>
+        <source>Busiest day</source>
+        <translation>Самый активный день</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="397"/>
+        <source>No traffic yet</source>
+        <translation>Трафика пока нет</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="401"/>
+        <location filename="../qml/StatisticsPage.qml" line="477"/>
+        <source>Apps through the VPN</source>
+        <translation>Приложения через VPN</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="401"/>
+        <location filename="../qml/StatisticsPage.qml" line="477"/>
+        <source>Apps outside the VPN</source>
+        <translation>Приложения мимо VPN</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../qml/StatisticsPage.qml" line="403"/>
+        <source>%n app(s)</source>
+        <translation>
+            <numerusform>%n приложение</numerusform>
+            <numerusform>%n приложения</numerusform>
+            <numerusform>%n приложений</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="417"/>
+        <source>Traffic through the VPN</source>
+        <translation>Трафик через VPN</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="426"/>
+        <source>No traffic in this period yet</source>
+        <translation>За этот период трафика пока нет</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="447"/>
+        <source>Locations</source>
+        <translation>Локации</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="462"/>
+        <location filename="../qml/StatisticsPage.qml" line="572"/>
+        <source>No connections in this period</source>
+        <translation>За этот период подключений не было</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="494"/>
+        <source>Traffic of the apps on the Exclusions page shows up here.</source>
+        <translation>Здесь появится трафик приложений со страницы «Исключения».</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="511"/>
+        <source>Sessions</source>
+        <translation>Сеансы</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="546"/>
+        <source>%1 · now</source>
+        <translation>%1 · сейчас</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="586"/>
+        <source>Counted since %1. Statistics stay on this computer.</source>
+        <translation>Считается с %1. Статистика хранится только на этом компьютере.</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="587"/>
+        <source>Statistics stay on this computer.</source>
+        <translation>Статистика хранится только на этом компьютере.</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="598"/>
+        <source>Reset all statistics?</source>
+        <translation>Сбросить всю статистику?</translation>
+    </message>
+    <message>
+        <location filename="../qml/StatisticsPage.qml" line="598"/>
+        <source>Reset</source>
+        <translation>Сбросить</translation>
+    </message>
+</context>
+<context>
     <name>Theme</name>
     <message>
-        <location filename="../qml/Theme.qml" line="54"/>
+        <location filename="../qml/Theme.qml" line="59"/>
         <source>B</source>
         <translation>Б</translation>
     </message>
     <message>
-        <location filename="../qml/Theme.qml" line="54"/>
+        <location filename="../qml/Theme.qml" line="59"/>
         <source>KB</source>
         <translation>КБ</translation>
     </message>
     <message>
-        <location filename="../qml/Theme.qml" line="54"/>
+        <location filename="../qml/Theme.qml" line="59"/>
         <source>MB</source>
         <translation>МБ</translation>
     </message>
     <message>
-        <location filename="../qml/Theme.qml" line="54"/>
+        <location filename="../qml/Theme.qml" line="59"/>
         <source>GB</source>
         <translation>ГБ</translation>
     </message>
     <message>
-        <location filename="../qml/Theme.qml" line="54"/>
+        <location filename="../qml/Theme.qml" line="59"/>
         <source>TB</source>
         <translation>ТБ</translation>
+    </message>
+    <message>
+        <location filename="../qml/Theme.qml" line="70"/>
+        <source>%1/s</source>
+        <translation>%1/с</translation>
+    </message>
+    <message>
+        <location filename="../qml/Theme.qml" line="77"/>
+        <source>%1 s</source>
+        <translation>%1 с</translation>
+    </message>
+    <message>
+        <location filename="../qml/Theme.qml" line="80"/>
+        <source>%1 min</source>
+        <translation>%1 мин</translation>
+    </message>
+    <message>
+        <location filename="../qml/Theme.qml" line="83"/>
+        <source>%1 h %2 min</source>
+        <translation>%1 ч %2 мин</translation>
+    </message>
+    <message>
+        <location filename="../qml/Theme.qml" line="84"/>
+        <source>%1 d %2 h</source>
+        <translation>%1 д %2 ч</translation>
     </message>
 </context>
 <context>
@@ -755,97 +1004,97 @@
 <context>
     <name>agv::DaemonClient</name>
     <message>
-        <location filename="../daemonclient.cpp" line="256"/>
+        <location filename="../daemonclient.cpp" line="258"/>
         <source>“%1”: write %2 for all subdomains</source>
         <translation>«%1»: для всех поддоменов пишите %2</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="259"/>
+        <location filename="../daemonclient.cpp" line="261"/>
         <source>“%1”: * is only allowed at the start, as *.domain</source>
         <translation>«%1»: * можно ставить только в начале, как *.domain</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="262"/>
+        <location filename="../daemonclient.cpp" line="264"/>
         <source>“%1”: for the whole zone write %2</source>
         <translation>«%1»: для всей зоны пишите %2</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="265"/>
+        <location filename="../daemonclient.cpp" line="267"/>
         <source>“%1” is not a domain, IP address or range</source>
         <translation>«%1» — не домен, не IP-адрес и не диапазон</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="337"/>
+        <location filename="../daemonclient.cpp" line="339"/>
         <source>%1 now uses the VPN. Restart it if it was already running.</source>
         <translation>%1 теперь работает через VPN. Перезапустите, если уже было открыто.</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="338"/>
+        <location filename="../daemonclient.cpp" line="340"/>
         <source>%1 now bypasses the VPN. Restart it if it was already running.</source>
         <translation>%1 теперь работает мимо VPN. Перезапустите, если уже было открыто.</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="388"/>
+        <location filename="../daemonclient.cpp" line="390"/>
         <source>Saved. Reconnect to apply it.</source>
         <translation>Сохранено. Переподключитесь, чтобы применить.</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="390"/>
+        <location filename="../daemonclient.cpp" line="392"/>
         <source>Saved. Applies on the next connection.</source>
         <translation>Сохранено. Применится при следующем подключении.</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="502"/>
+        <location filename="../daemonclient.cpp" line="526"/>
         <source>Signed in with your adguardvpn-cli account</source>
         <translation>Вход выполнен через аккаунт из adguardvpn-cli</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="518"/>
+        <location filename="../daemonclient.cpp" line="542"/>
         <source>The login link from AdGuard VPN looks wrong: %1</source>
         <translation>Ссылка для входа от AdGuard VPN выглядит подозрительно: %1</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="522"/>
+        <location filename="../daemonclient.cpp" line="546"/>
         <source>Open this link to sign in: %1</source>
         <translation>Откройте ссылку, чтобы войти: %1</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="524"/>
+        <location filename="../daemonclient.cpp" line="548"/>
         <source>Confirm the sign-in in your browser</source>
         <translation>Подтвердите вход в браузере</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="532"/>
+        <location filename="../daemonclient.cpp" line="556"/>
         <source>Signed in</source>
         <translation>Вход выполнен</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="535"/>
+        <location filename="../daemonclient.cpp" line="559"/>
         <source>Sign-in failed: %1</source>
         <translation>Не удалось войти: %1</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="639"/>
+        <location filename="../daemonclient.cpp" line="669"/>
         <source>Sign in to AdGuard VPN first</source>
         <translation>Сначала войдите в AdGuard VPN</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="642"/>
+        <location filename="../daemonclient.cpp" line="672"/>
         <source>Not allowed: %1</source>
         <translation>Нет доступа: %1</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="644"/>
+        <location filename="../daemonclient.cpp" line="674"/>
         <source>This needs an administrator password</source>
         <translation>Нужен пароль администратора</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="647"/>
+        <location filename="../daemonclient.cpp" line="677"/>
         <source>The agvd service is not running</source>
         <translation>Служба agvd не запущена</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="650"/>
+        <location filename="../daemonclient.cpp" line="680"/>
         <source>The agvd service did not answer in time</source>
         <translation>Служба agvd не ответила вовремя</translation>
     </message>

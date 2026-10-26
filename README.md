@@ -5,8 +5,8 @@ built with C++, Qt 6 and QML. Its main feature is the one the CLI lacks on Linux
 individual apps from the VPN**, the way the Windows client does.
 
 > Early development. Working: the daemon, the GUI (connect, locations with favorites, website
-> exclusions, account, tray) and per-app exclusions: pick apps in the GUI and they bypass the VPN
-> however they are started, or run anything outside it with `agv-run <command>`.
+> exclusions, account, tray, statistics) and per-app exclusions: pick apps in the GUI and they bypass
+> the VPN however they are started, or run anything outside it with `agv-run <command>`.
 > See [docs/PLAN.md](docs/PLAN.md).
 
 ## Architecture

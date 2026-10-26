@@ -23,6 +23,8 @@ add_library(agvd-core STATIC
     routingengine.cpp
     runsocketserver.h
     runsocketserver.cpp
+    statsrecorder.h
+    statsrecorder.cpp
     systemdunit.h
     systemdunit.cpp
     daemonservice.h

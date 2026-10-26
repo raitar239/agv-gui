@@ -9,6 +9,7 @@
 #include "polkitauthorizer.h"
 #include "routingengine.h"
 #include "runsocketserver.h"
+#include "statsrecorder.h"
 #include "systemdunit.h"
 #include "vpnservice.h"
 
@@ -176,6 +177,43 @@ int main(int argc, char *argv[])
     RunSocketServer runSocket(&apps, runtimeDir + QStringLiteral("/run.sock"));
     if (!runSocket.listen())
         qWarning("agvd: agv-run socket unavailable: %s", qPrintable(runSocket.errorString()));
+
+    // Statistics page: counters every few seconds, and right away on every state change so
+    // sessions start and end on time.
+    StatsRecorder stats(dataDir + QStringLiteral("/stats.json"));
+    if (const QString error = stats.load(); !error.isEmpty())
+        qWarning("agvd: %s; statistics start over", qPrintable(error));
+    stats.start([&vpn, &apps] {
+        StatsRecorder::Sample sample;
+        sample.time = QDateTime::currentDateTimeUtc();
+        sample.connected = vpn.state() == VpnService::State::Connected;
+        sample.location = vpn.location();
+        sample.tunDevice = vpn.tunDevice();
+        // SOCKS5 mode has no tunnel: connected time still counts, traffic does not.
+        if (sample.connected && !sample.tunDevice.isEmpty() && !sample.tunDevice.contains(QLatin1Char('/'))) {
+            const auto read = [&sample](const char *counter) -> std::optional<quint64> {
+                QFile file(QStringLiteral("/sys/class/net/%1/statistics/%2").arg(sample.tunDevice, QLatin1String(counter)));
+                bool ok = false;
+                const quint64 value = file.open(QIODevice::ReadOnly) ? file.readAll().trimmed().toULongLong(&ok) : 0;
+                return ok ? std::optional(value) : std::nullopt;
+            };
+            const auto in = read("rx_bytes");
+            const auto out = read("tx_bytes");
+            if (in && out)
+                sample.tunnel = StatsRecorder::Bytes{*in, *out};
+        }
+        if (apps.isSupported()) {
+            const auto traffic = apps.traffic();
+            for (auto it = traffic.cbegin(); it != traffic.cend(); ++it)
+                sample.apps.insert(it.key(), {it->bytesIn, it->bytesOut});
+            for (const AppRule &rule : apps.rules())
+                sample.appInfo.insert(rule.id, {rule.name, rule.icon, rule.ownerUid});
+            sample.appInfo.insert(RoutingEngine::BuiltinRunId, {QStringLiteral("agv-run"), QString(), -1});
+        }
+        return sample;
+    });
+    QObject::connect(&vpn, &VpnService::statusChanged, &stats, &StatsRecorder::sampleNow);
+    service.setStatistics(&stats);
 
     vpn.start();
     return app.exec();

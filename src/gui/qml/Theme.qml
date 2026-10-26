@@ -35,6 +35,11 @@ QtObject {
     readonly property color warning: "#ff9500"
     readonly property color warningSoft: dark ? Qt.rgba(1, 0.584, 0, 0.14) : "#fff9f0"
 
+    // Charts: download in the brand green, upload in a lighter tint of it.
+    readonly property color chartIn: accent
+    readonly property color chartOut: dark ? "#b5d39c" : "#a9cc8c"
+    readonly property color chartGrid: dark ? "#2a2a2a" : "#ececec"
+
     // Shape and rhythm
     readonly property int radius: 12
     readonly property int radiusSmall: 8
@@ -59,6 +64,36 @@ QtObject {
             ++unit
         }
         return (unit === 0 || value >= 100 ? Math.round(value) : value.toFixed(1)) + " " + units[unit]
+    }
+
+    function formatSpeed(bytesPerSecond) {
+        return qsTr("%1/s").arg(formatBytes(bytesPerSecond))
+    }
+
+    // 45 s, 12 min, 3 h 05 min, 2 d 4 h
+    function formatDuration(seconds) {
+        const s = Math.max(0, Math.round(seconds))
+        if (s < 60)
+            return qsTr("%1 s").arg(s)
+        const minutes = Math.floor(s / 60)
+        if (minutes < 60)
+            return qsTr("%1 min").arg(minutes)
+        const hours = Math.floor(minutes / 60)
+        if (hours < 24)
+            return qsTr("%1 h %2 min").arg(hours).arg(String(minutes % 60).padStart(2, "0"))
+        return qsTr("%1 d %2 h").arg(Math.floor(hours / 24)).arg(hours % 24)
+    }
+
+    // The smallest round number (1, 2, 2.5, 5 × 10ⁿ) at or above value, for chart scales.
+    function niceCeil(value) {
+        if (value <= 0)
+            return 1
+        const power = Math.pow(10, Math.floor(Math.log10(value)))
+        for (const step of [1, 2, 2.5, 5, 10]) {
+            if (step * power >= value)
+                return step * power
+        }
+        return 10 * power
     }
 
     function pingColor(ping) {

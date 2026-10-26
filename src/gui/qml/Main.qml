@@ -18,6 +18,7 @@ ApplicationWindow {
         { icon: "home", label: qsTr("Home"), short: qsTr("Home") },
         { icon: "globe", label: qsTr("Locations"), short: qsTr("Locations") },
         { icon: "split", label: qsTr("Exclusions"), short: qsTr("Exclusions") },
+        { icon: "chart", label: qsTr("Statistics"), short: qsTr("Stats") },
         { icon: "settings", label: qsTr("Settings"), short: qsTr("Settings") }
     ]
 
@@ -96,6 +97,7 @@ ApplicationWindow {
                     onChosen: if (window.layoutMode !== "expanded") window.currentPage = 0
                 }
                 ExclusionsPage {}
+                StatisticsPage {}
                 SettingsPage {
                     onCopied: toast.show(qsTr("Copied to the clipboard"), false)
                 }

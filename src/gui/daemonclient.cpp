@@ -3,6 +3,7 @@
 #include "keyedlistmodel.h"
 #include "locationmodel.h"
 #include "siteexclusion.h"
+#include "statistics.h"
 
 #include <QDBusArgument>
 #include <QDBusMessage>
@@ -11,6 +12,7 @@
 #include <QDBusServiceWatcher>
 #include <QDesktopServices>
 #include <QFile>
+#include <QJsonDocument>
 #include <QRegularExpression>
 #include <QSet>
 #include <QUrl>
@@ -475,6 +477,28 @@ void DaemonClient::refreshLicense()
     });
 }
 
+void DaemonClient::refreshStatistics()
+{
+    if (!m_available)
+        return;
+    call(QStringLiteral("GetStatistics"), {}, [this](const QDBusMessage &reply) {
+        m_statistics = QJsonDocument::fromJson(reply.arguments().value(0).toString().toUtf8()).object();
+        m_statisticsAvailable = true;
+        ++m_statisticsRevision;
+        emit statisticsChanged();
+    });
+}
+
+void DaemonClient::resetStatistics()
+{
+    call(QStringLiteral("ResetStatistics"), {}, [this](const QDBusMessage &) { refreshStatistics(); });
+}
+
+QVariantMap DaemonClient::statisticsFor(const QString &period) const
+{
+    return stats::summarize(m_statistics, period, QDateTime::currentDateTime());
+}
+
 void DaemonClient::login()
 {
     call(QStringLiteral("Login"), {}, [this](const QDBusMessage &) {
@@ -558,6 +582,12 @@ void DaemonClient::call(const QString &method, const QVariantList &args, Reply o
             setBusy(false);
         const QDBusMessage reply = watcher->reply();
         if (reply.type() == QDBusMessage::ErrorMessage) {
+            // An older agvd without statistics: the page says so instead of a toast every few seconds.
+            if (method == QLatin1String("GetStatistics")) {
+                m_statisticsAvailable = false;
+                emit statisticsChanged();
+                return;
+            }
             if (method == QLatin1String("ListLocations"))
                 m_locations->setLoading(false);
             emit errorOccurred(describe(reply));
