@@ -34,49 +34,6 @@ Item {
                 font.weight: Font.Bold
             }
 
-            // Appearance
-            Card {
-                Layout.fillWidth: true
-                ColumnLayout {
-                    width: parent.width
-                    spacing: 12
-                    RowLayout {
-                        spacing: 12
-                        Layout.fillWidth: true
-                        AppIcon { name: "palette"; color: Theme.textSecondary }
-                        Text {
-                            text: qsTr("Theme")
-                            color: Theme.text
-                            font.pixelSize: Theme.fontBody
-                            Layout.fillWidth: true
-                        }
-                        Segmented {
-                            options: [{ value: "system", label: qsTr("System") },
-                                      { value: "light", label: qsTr("Light") },
-                                      { value: "dark", label: qsTr("Dark") }]
-                            value: SystemTheme.preference
-                            onActivated: (value) => SystemTheme.preference = value
-                        }
-                    }
-                    RowLayout {
-                        spacing: 12
-                        Layout.fillWidth: true
-                        AppIcon { name: "globe"; color: Theme.textSecondary }
-                        Text {
-                            text: qsTr("Language")
-                            color: Theme.text
-                            font.pixelSize: Theme.fontBody
-                            Layout.fillWidth: true
-                        }
-                        Dropdown {
-                            options: Language.options
-                            value: Language.preference
-                            onActivatedValue: (value) => Language.preference = value
-                        }
-                    }
-                }
-            }
-
             // Account
             Card {
                 Layout.fillWidth: true
@@ -164,6 +121,49 @@ Item {
                             text: qsTr("Sign out")
                             enabled: !Daemon.busy
                             onClicked: Daemon.logout()
+                        }
+                    }
+                }
+            }
+
+            // Appearance
+            Card {
+                Layout.fillWidth: true
+                ColumnLayout {
+                    width: parent.width
+                    spacing: 12
+                    RowLayout {
+                        spacing: 12
+                        Layout.fillWidth: true
+                        AppIcon { name: "palette"; color: Theme.textSecondary }
+                        Text {
+                            text: qsTr("Theme")
+                            color: Theme.text
+                            font.pixelSize: Theme.fontBody
+                            Layout.fillWidth: true
+                        }
+                        Segmented {
+                            options: [{ value: "system", label: qsTr("System") },
+                                      { value: "light", label: qsTr("Light") },
+                                      { value: "dark", label: qsTr("Dark") }]
+                            value: SystemTheme.preference
+                            onActivated: (value) => SystemTheme.preference = value
+                        }
+                    }
+                    RowLayout {
+                        spacing: 12
+                        Layout.fillWidth: true
+                        AppIcon { name: "globe"; color: Theme.textSecondary }
+                        Text {
+                            text: qsTr("Language")
+                            color: Theme.text
+                            font.pixelSize: Theme.fontBody
+                            Layout.fillWidth: true
+                        }
+                        Dropdown {
+                            options: Language.options
+                            value: Language.preference
+                            onActivatedValue: (value) => Language.preference = value
                         }
                     }
                 }
