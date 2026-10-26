@@ -1,0 +1,41 @@
+# Maintainer: Raitar <raitar239 at gmail dot com>
+
+pkgname=agv-gui-git
+_name=agv-gui
+pkgver=0.2.0.r0.g0000000
+pkgrel=1
+pkgdesc='Unofficial client for AdGuard VPN CLI with per-app exclusions and a kill switch (Qt 6, development version)'
+arch=('x86_64' 'aarch64')
+url='https://github.com/raitar239/agv-gui'
+license=('MIT')
+depends=('qt6-base' 'qt6-declarative' 'nftables' 'iproute2' 'polkit' 'systemd')
+makedepends=('cmake' 'ninja' 'git' 'qt6-tools')
+optdepends=('adguardvpn-cli-bin: the AdGuard VPN CLI, unless installed with AdGuard'\''s script')
+provides=("$_name")
+conflicts=("$_name")
+install=agv-gui.install
+source=("$_name::git+$url.git")
+sha256sums=('SKIP')
+
+pkgver() {
+    cd "$_name"
+    git describe --long --tags --abbrev=7 | sed 's/^v//; s/\([^-]*-g\)/r\1/; s/-/./g'
+}
+
+build() {
+    cmake -S "$_name" -B build -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_INSTALL_LIBEXECDIR=lib/agv-gui \
+        -DBUILD_TESTING=ON
+    cmake --build build
+}
+
+check() {
+    ctest --test-dir build --output-on-failure
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+    install -Dm644 "$_name/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

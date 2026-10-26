@@ -1,0 +1,98 @@
+# Builds and tests AGV on the distributions it supports and keeps the packages as artifacts.
+# A "v*" tag also publishes them as a GitHub release.
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  packages:
+    name: ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ['debian:12', 'ubuntu:24.04', 'fedora:latest']
+    steps:
+      - name: Install build dependencies
+        run: |
+          # actions/checkout needs git and tar in the container
+          if command -v apt-get >/dev/null; then apt-get update -q && apt-get install -y -q git; else dnf install -y git tar; fi
+      - uses: actions/checkout@v4
+      - run: bash packaging/ci/install-deps.sh
+      - name: Build, test, package
+        run: bash packaging/ci/build.sh "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/dist"
+      - name: Install the package and check it
+        run: |
+          if command -v apt-get >/dev/null; then
+            apt-get install -y -q --no-install-recommends ./dist/*.deb
+          else
+            dnf install -y ./dist/*.rpm
+          fi
+          bash packaging/ci/smoke.sh
+      - name: Name the package after the distribution
+        run: |
+          tag=$(echo '${{ matrix.image }}' | tr ':/' '--')
+          for f in dist/*.deb dist/*.rpm; do [ -e "$f" ] && mv "$f" "${f%.*}-$tag.${f##*.}"; done
+          ls -l dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-${{ strategy.job-index }}
+          path: dist/*
+
+  arch:
+    name: archlinux
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - run: pacman -Syu --noconfirm --needed git
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # pkgver counts commits
+      - run: bash packaging/ci/install-deps.sh
+      - name: Build, test and package with makepkg
+        run: |
+          # makepkg refuses to run as root
+          useradd -m builder
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          chown -R builder "$GITHUB_WORKSPACE"
+          su builder -c "git config --global --add safe.directory '$GITHUB_WORKSPACE' && cd '$GITHUB_WORKSPACE/packaging/arch' && makepkg -f --noconfirm"
+          mkdir -p dist
+          cp packaging/arch/*.pkg.tar.zst dist/
+          rm -f dist/*-debug-*
+      - name: Install the package and check it
+        run: |
+          pacman -U --noconfirm dist/*.pkg.tar.zst
+          bash packaging/ci/smoke.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-arch
+          path: dist/*
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [packages, arch]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prerelease=
+          case '${{ github.ref_name }}' in v0.*) prerelease=--prerelease ;; esac
+          gh release create '${{ github.ref_name }}' dist/* --repo '${{ github.repository }}' \
+            --title 'AGV ${{ github.ref_name }}' --generate-notes $prerelease

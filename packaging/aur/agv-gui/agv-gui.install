@@ -1,0 +1,22 @@
+post_install() {
+    systemctl daemon-reload >/dev/null 2>&1 || true
+    echo ':: Start the service now and at boot:  systemctl enable --now agvd'
+    echo ':: Then open "AGV" from the application menu.'
+}
+
+post_upgrade() {
+    systemctl daemon-reload >/dev/null 2>&1 || true
+    # Restarting agvd keeps the VPN and excluded apps running (KillMode=process).
+    systemctl try-restart agvd.service >/dev/null 2>&1 || true
+}
+
+pre_remove() {
+    systemctl disable --now agvd.service >/dev/null 2>&1 || true
+    # Routing state (nftables table, ip rules, cgroups) outlives the daemon on purpose.
+    /usr/lib/agv-gui/agvd --cleanup --data-dir /var/lib/agvd >/dev/null 2>&1 || true
+}
+
+post_remove() {
+    systemctl daemon-reload >/dev/null 2>&1 || true
+    echo ':: /var/lib/agvd (AdGuard VPN login and exclusions) was kept; delete it to forget them.'
+}

@@ -1,0 +1,26 @@
+pkgbase = agv-gui-git
+	pkgdesc = Unofficial client for AdGuard VPN CLI with per-app exclusions and a kill switch (Qt 6, development version)
+	pkgver = 0.2.0.r0.g0000000
+	pkgrel = 1
+	url = https://github.com/raitar239/agv-gui
+	install = agv-gui.install
+	arch = x86_64
+	arch = aarch64
+	license = MIT
+	makedepends = cmake
+	makedepends = ninja
+	makedepends = git
+	makedepends = qt6-tools
+	depends = qt6-base
+	depends = qt6-declarative
+	depends = nftables
+	depends = iproute2
+	depends = polkit
+	depends = systemd
+	optdepends = adguardvpn-cli-bin: the AdGuard VPN CLI, unless installed with AdGuard's script
+	provides = agv-gui
+	conflicts = agv-gui
+	source = agv-gui::git+https://github.com/raitar239/agv-gui.git
+	sha256sums = SKIP
+
+pkgname = agv-gui-git

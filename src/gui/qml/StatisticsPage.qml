@@ -7,7 +7,8 @@ import Agv.Backend
 Item {
     id: page
 
-    property string period: shotState.startsWith("stats:") ? shotState.slice(6) : "today"
+    property string period: shotState.startsWith("stats:") ? shotState.slice(6)
+                          : shotState.startsWith("stats-live:") ? shotState.slice(11) : "today"
     // Development hook for --screenshot (AGV_SCREENSHOT_STATE=stats:week and so on).
     readonly property string shotState: Window.window ? Window.window.screenshotState : ""
     readonly property bool wide: width >= 760
@@ -36,7 +37,7 @@ Item {
     }
 
     readonly property bool liveTraffic: (Daemon.connected && (Daemon.hasTunnel || Daemon.appExclusionsSupported))
-                                        || shotState === "stats-live"
+                                        || shotState.startsWith("stats-live")
 
     // Live speed from the tunnel counters, one point per second for the last minute.
     property var speedIn: []
@@ -53,7 +54,7 @@ Item {
         lastIn = -1
         lastOut = -1
         // Screenshots of the live card without a VPN connection.
-        if (shotState === "stats-live") {
+        if (shotState.startsWith("stats-live")) {
             for (let i = 0; i < 60; ++i) {
                 speedIn.push(1.5e6 + 1.2e6 * Math.sin(i / 6) + 4e5 * Math.sin(i * 1.7))
                 speedOut.push(1.2e5 + 6e4 * Math.cos(i / 5))
@@ -86,7 +87,7 @@ Item {
     Connections {
         target: Daemon
         function onTunnelTrafficChanged() {
-            if (!page.visible)
+            if (!page.visible || page.shotState.startsWith("stats-live"))
                 return
             const now = Date.now()
             if (page.lastIn >= 0 && now > page.lastTime) {

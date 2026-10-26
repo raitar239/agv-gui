@@ -1,13 +1,28 @@
-# agv-gui
+# AGV
 
-A desktop client for [AdGuard VPN CLI](https://github.com/AdguardTeam/AdGuardVPNCLI) on Linux,
-built with C++, Qt 6 and QML. Its main feature is the one the CLI lacks on Linux: **excluding
-individual apps from the VPN**, the way the Windows client does.
+An unofficial desktop client for [AdGuard VPN CLI](https://github.com/AdguardTeam/AdGuardVPNCLI)
+on Linux, built with C++, Qt 6 and QML. Its main feature is the one the CLI lacks on Linux:
+**excluding individual apps from the VPN**, the way the Windows client does.
 
-> Early development. Working: the daemon, the GUI (connect, locations with favorites, website
-> exclusions, account, tray, statistics) and per-app exclusions: pick apps in the GUI and they bypass
-> the VPN however they are started, or run anything outside it with `agv-run <command>`.
-> See [docs/PLAN.md](docs/PLAN.md).
+![Home](docs/screenshots/home.png)
+
+- **Apps outside the VPN** (or only some apps through it): pick them from the menu, and they stay
+  excluded however they are started; or run anything with `agv-run <command>`.
+- **Websites**: each site with its subdomains, switch any of them off without deleting it, whole
+  zones like `.fr`, addresses and ranges.
+- **Kill switch** and **automatic reconnect** with notifications, **DNS kept inside the VPN** and a
+  leak check.
+- **Wi-Fi rules**: connect on networks you do not trust, disconnect on trusted ones.
+- **Statistics**: live speed, traffic by day, locations, apps and sessions, CSV export.
+- Locations with ping and favorites, TUN or SOCKS5 mode, HTTP/2 or QUIC, tray, autostart,
+  English and Russian, light and dark, from a phone-sized window to a full screen.
+
+| Exclusions | Statistics |
+| --- | --- |
+| ![Exclusions](docs/screenshots/exclusions.png) | ![Statistics](docs/screenshots/statistics.png) |
+
+AGV is an independent project, not affiliated with or endorsed by AdGuard. It drives the official
+`adguardvpn-cli`, which you install from AdGuard.
 
 ## Architecture
 
@@ -19,16 +34,24 @@ individual apps from the VPN**, the way the Windows client does.
 
 ## Install
 
-Arch Linux (builds this checkout into a package):
+First install the AdGuard VPN CLI with AdGuard's script (AGV offers the command when it is missing):
 
 ```sh
-cd packaging/arch
-makepkg -si
+curl -fsSL https://raw.githubusercontent.com/AdguardTeam/AdGuardVPNCLI/master/scripts/release/install.sh | sh -s -- -v
+```
+
+Then AGV:
+
+- **Arch Linux**: `agv-gui` or `agv-gui-git` from the AUR, or build this checkout with
+  `cd packaging/arch && makepkg -si`.
+- **Debian, Ubuntu, Fedora**: the `.deb` and `.rpm` packages from
+  [Releases](https://github.com/raitar239/agv-gui/releases).
+
+```sh
 sudo systemctl enable --now agvd
 ```
 
-Then open "AGV" from the application menu. The AdGuard VPN CLI itself comes from
-[adguard-vpn.com](https://adguard-vpn.com/) or the AUR (`adguardvpn-cli-bin`).
+Then open "AGV" from the application menu and sign in.
 
 ## Build
 
@@ -88,6 +111,13 @@ does stopping agvd. If you are ever cut off and AGV does not respond:
 ```sh
 sudo nft delete table inet agvd-killswitch
 ```
+
+## Packages
+
+`.github/workflows/ci.yml` builds and tests on Debian 12, Ubuntu 24.04, Fedora and Arch, and a
+`v*` tag publishes the packages as a release. Locally, `sudo packaging/build-packages.sh` does the
+same in Docker. AUR files are in `packaging/aur`; `packaging/aur/update.sh VERSION` prepares them
+for a tag.
 
 ## License
 

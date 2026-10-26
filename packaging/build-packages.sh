@@ -36,58 +36,21 @@ if ! systemctl is-active --quiet docker; then
 fi
 mkdir -p "$out"
 
-deb_build_deps="ca-certificates cmake ninja-build g++ file dpkg-dev libgl-dev \
-    qt6-base-dev qt6-declarative-dev qt6-declarative-dev-tools qt6-tools-dev qt6-tools-dev-tools \
-    qt6-l10n-tools qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-layouts \
-    qml6-module-qtquick-shapes qml6-module-qtquick-templates qml6-module-qtquick-window \
-    qml6-module-qtqml-workerscript util-linux iproute2 nftables"
-rpm_build_deps="cmake ninja-build gcc-c++ rpm-build qt6-qtbase-devel qt6-qtdeclarative-devel \
-    qt6-qttools-devel qt6-linguist util-linux iproute nftables"
-
-# Inside the build container: configure, build, test, package.
-build_script='
-set -e
-cmake -S /src -B /tmp/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr \
-      -DCMAKE_INSTALL_LIBEXECDIR=libexec/agv-gui -DBUILD_TESTING=ON
-cmake --build /tmp/build
-ctest --test-dir /tmp/build --output-on-failure
-cd /tmp/build && cpack -G "$GENERATOR"
-cp /tmp/build/*."$EXT" /out/
-'
-
-# Inside a fresh container: the package must install with its dependencies and start.
-smoke_script='
-set -e
-agvd_path=/usr/libexec/agv-gui/agvd
-"$agvd_path" --version
-agv-run --help | head -1
-test -f /usr/lib/systemd/system/agvd.service
-grep -q "ExecStart=$agvd_path" /usr/lib/systemd/system/agvd.service
-test -f /usr/share/polkit-1/actions/org.agv.daemon.policy
-QT_QPA_PLATFORM=offscreen AGV_SCREENSHOT_DELAY=1500 QT_FORCE_STDERR_LOGGING=1 \
-    agv-gui --screenshot /tmp/shot.png --size 700x500 2>&1 | tee /tmp/gui.log
-test -s /tmp/shot.png
-if grep -E "TypeError|ReferenceError|is not available|cannot load|module .* is not installed" /tmp/gui.log; then
-    echo "QML errors in the GUI" >&2
-    exit 1
-fi
-echo "smoke test passed"
-'
+# The steps themselves live in packaging/ci, shared with GitHub Actions.
+ci="$src/packaging/ci"
 
 for image in "${images[@]}"; do
     echo
     echo "================ $image"
     case "$image" in
         debian:*|ubuntu:*)
-            generator=DEB ext=deb
-            install_deps="set -o pipefail; export DEBIAN_FRONTEND=noninteractive; echo '-- installing build dependencies (a few minutes)'; apt-get update -q && apt-get install -y -q --no-install-recommends $deb_build_deps | { grep -E '^(Get|Setting up)' || true; } | cut -c1-100"
+            ext=deb
             # Keep downloaded .debs in the cache volume (Docker images delete them by default).
             install_pkg="export DEBIAN_FRONTEND=noninteractive; rm -f /etc/apt/apt.conf.d/docker-clean; apt-get update -qq && apt-get install -y -qq --no-install-recommends /pkg/PKG >/dev/null"
             cache_dir=/var/cache/apt/archives
             ;;
         fedora:*)
-            generator=RPM ext=rpm
-            install_deps="set -o pipefail; echo '-- installing build dependencies (a few minutes)'; dnf install -y $rpm_build_deps | { grep -E '^ *(Installing|Upgrading)' || true; } | cut -c1-100"
+            ext=rpm
             install_pkg="dnf install -y -q --setopt=keepcache=1 /pkg/PKG >/dev/null"
             cache_dir=/var/cache/dnf
             ;;
@@ -104,16 +67,17 @@ for image in "${images[@]}"; do
     if $refresh || ! docker image inspect "$image" >/dev/null 2>&1; then
         docker pull -q "$image" >/dev/null
     fi
-    builder="agv-gui-builder:$tag"
+    # The suffix changes with packaging/ci/install-deps.sh, so older builders are not reused.
+    builder="agv-gui-builder:$tag-2"
     if $refresh || ! docker image inspect "$builder" >/dev/null 2>&1; then
         echo "== preparing $builder (once; a few minutes)"
-        printf 'FROM %s\nSHELL ["/bin/bash", "-c"]\nRUN %s\n' "$image" "$install_deps" | docker build -t "$builder" - 2>&1 | grep -vE "^(Step |Sending build|DEPRECATED|  *Install the buildx|  *https://docs.docker|  *--->|Removing intermediate|Successfully)" || true
+        printf 'FROM %s\nCOPY install-deps.sh /tmp/\nRUN bash /tmp/install-deps.sh > /tmp/deps.log 2>&1 || { tail -30 /tmp/deps.log; exit 1; }\n' "$image" \
+            | docker build -t "$builder" -f - "$ci" 2>&1 | grep -vE "^(Step |Sending build|DEPRECATED|  *Install the buildx|  *https://docs.docker|  *--->|Removing intermediate|Successfully)" || true
         docker image inspect "$builder" >/dev/null 2>&1 || { echo "Preparing $builder failed" >&2; exit 1; }
     fi
 
     echo "== build and test"
-    docker run --rm -v "$src:/src:ro" -v "$stage:/out" -e GENERATOR=$generator -e EXT=$ext "$builder" \
-        bash -c "$build_script"
+    docker run --rm -v "$src:/src:ro" -v "$stage:/out" "$builder" bash /src/packaging/ci/build.sh /src /out
 
     pkg=$(cd "$stage" && ls *."$ext" | head -1)
     name="${pkg%.$ext}-${tag}.$ext"
@@ -121,8 +85,8 @@ for image in "${images[@]}"; do
     rm -rf "$stage"
 
     echo "== install $name into a fresh $image"
-    docker run --rm -v "$out:/pkg:ro" -v "agv-gui-cache-$tag:$cache_dir" "$image" \
-        bash -c "${install_pkg/PKG/$name} && $smoke_script"
+    docker run --rm -v "$out:/pkg:ro" -v "$ci:/ci:ro" -v "agv-gui-cache-$tag:$cache_dir" "$image" \
+        bash -c "${install_pkg/PKG/$name} && bash /ci/smoke.sh"
     echo "== $image OK: dist/$name"
 done
 
