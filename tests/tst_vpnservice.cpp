@@ -276,6 +276,102 @@ private slots:
         QCOMPARE(scenario.calls(), QStringList({QStringLiteral("site-exclusions|add|a.com|*.b.org")}));
     }
 
+    void siteEntriesCanBeSwitchedOff()
+    {
+        Scenario scenario;
+        scenario.respond(QStringLiteral("site-exclusions_show"),
+                         QStringLiteral("Exclusions for GENERAL mode:\na.com\n"));
+        scenario.respond(QStringLiteral("site-exclusions_remove_*.a.com"), QStringLiteral("Successfully removed 1 exclusions\n"));
+        scenario.respond(QStringLiteral("site-exclusions_add_*.a.com"), QStringLiteral("Successfully added 1 exclusions\n"));
+        CliRunner cli(FakeCli, scenario.home());
+        VpnService vpn(&cli);
+
+        std::optional<Error> error;
+        vpn.setSiteExclusionEnabled(QStringLiteral("*.a.com"), false, {}, [&](const Error &e) { error = e; });
+        QTRY_VERIFY(error.has_value());
+        QVERIFY(error->isOk());
+        QVERIFY(scenario.calls().contains(QStringLiteral("site-exclusions|remove|*.a.com")));
+
+        // Listed as off, next to the active entries from the CLI.
+        std::optional<QList<QPair<QString, bool>>> list;
+        vpn.listSiteExclusions([&](const QList<QPair<QString, bool>> &items, const Error &) { list = items; });
+        QTRY_VERIFY(list.has_value());
+        QCOMPARE(*list, (QList<QPair<QString, bool>>{{QStringLiteral("a.com"), true}, {QStringLiteral("*.a.com"), false}}));
+
+        // Back on: added to the CLI again and no longer remembered as off.
+        error.reset();
+        vpn.setSiteExclusionEnabled(QStringLiteral("*.a.com"), true, {}, [&](const Error &e) { error = e; });
+        QTRY_VERIFY(error.has_value());
+        QVERIFY(scenario.calls().contains(QStringLiteral("site-exclusions|add|*.a.com")));
+        list.reset();
+        vpn.listSiteExclusions([&](const QList<QPair<QString, bool>> &items, const Error &) { list = items; });
+        QTRY_VERIFY(list.has_value());
+        QCOMPARE(list->size(), 1);
+
+        // Removing a switched-off entry only touches agvd's own store.
+        error.reset();
+        vpn.setSiteExclusionEnabled(QStringLiteral("*.a.com"), false, {}, [&](const Error &e) { error = e; });
+        QTRY_VERIFY(error.has_value());
+        const int callsBefore = int(scenario.calls().size());
+        error.reset();
+        vpn.removeSiteExclusions({QStringLiteral("*.a.com")}, [&](const Error &e) { error = e; });
+        QTRY_VERIFY(error.has_value());
+        QVERIFY(error->isOk());
+        QCOMPARE(int(scenario.calls().size()), callsBefore);
+    }
+
+    void siteGroupsSwitchTogether()
+    {
+        Scenario scenario;
+        scenario.respond(QStringLiteral("site-exclusions_show"),
+                         QStringLiteral("Exclusions for GENERAL mode:\na.com\n*.a.com\n"));
+        scenario.respond(QStringLiteral("site-exclusions_remove_cs.a.com"), QStringLiteral("Successfully removed 1 exclusions\n"));
+        scenario.respond(QStringLiteral("site-exclusions_remove_a.com_*.a.com"), QStringLiteral("Successfully removed 2 exclusions\n"));
+        scenario.respond(QStringLiteral("site-exclusions_add_a.com_*.a.com"), QStringLiteral("Successfully added 2 exclusions\n"));
+        CliRunner cli(FakeCli, scenario.home());
+        VpnService vpn(&cli);
+        const QStringList members{QStringLiteral("*.a.com"), QStringLiteral("cs.a.com")};
+
+        // cs.a.com is switched off on its own first.
+        std::optional<Error> error;
+        vpn.setSiteExclusionEnabled(QStringLiteral("cs.a.com"), false, {}, [&](const Error &e) { error = e; });
+        QTRY_VERIFY(error.has_value());
+
+        // The site goes off with the members that were still on; those keep their own "on".
+        error.reset();
+        vpn.setSiteExclusionEnabled(QStringLiteral("a.com"), false, members, [&](const Error &e) { error = e; });
+        QTRY_VERIFY(error.has_value());
+        QVERIFY(error->isOk());
+        QVERIFY(scenario.calls().contains(QStringLiteral("site-exclusions|remove|a.com|*.a.com")));
+
+        // Back on: only the members it held come back, cs.a.com stays off.
+        error.reset();
+        vpn.setSiteExclusionEnabled(QStringLiteral("a.com"), true, members, [&](const Error &e) { error = e; });
+        QTRY_VERIFY(error.has_value());
+        QVERIFY(error->isOk());
+        QVERIFY(scenario.calls().contains(QStringLiteral("site-exclusions|add|a.com|*.a.com")));
+        std::optional<QList<QPair<QString, bool>>> list;
+        vpn.listSiteExclusions([&](const QList<QPair<QString, bool>> &items, const Error &) { list = items; });
+        QTRY_VERIFY(list.has_value());
+        QCOMPARE(*list, (QList<QPair<QString, bool>>{{QStringLiteral("a.com"), true},
+                                                     {QStringLiteral("*.a.com"), true},
+                                                     {QStringLiteral("cs.a.com"), false}}));
+    }
+
+    void strictFormatOnAdd()
+    {
+        Scenario scenario;
+        CliRunner cli(FakeCli, scenario.home());
+        VpnService vpn(&cli);
+        std::optional<Error> error;
+        vpn.addSiteExclusions({QStringLiteral("*domain.net")}, [&](const Error &e) { error = e; });
+        QCOMPARE(error->name, errors::InvalidArgument);
+        error.reset();
+        vpn.addSiteExclusions({QStringLiteral("ru")}, [&](const Error &e) { error = e; });
+        QCOMPARE(error->name, errors::InvalidArgument);
+        QVERIFY(scenario.calls().isEmpty());
+    }
+
     void invalidInputNeverReachesCli()
     {
         Scenario scenario;

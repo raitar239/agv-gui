@@ -233,6 +233,31 @@ QStringList DaemonService::GetSiteExclusions()
     return {};
 }
 
+AgvSiteExclusionList DaemonService::ListSiteExclusions()
+{
+    setDelayedReply(true);
+    const QDBusMessage message = this->message();
+    m_vpn->listSiteExclusions([this, message](const QList<QPair<QString, bool>> &items, const Error &error) {
+        if (!error.isOk()) {
+            replyError(message, error);
+            return;
+        }
+        AgvSiteExclusionList result;
+        for (const auto &[item, enabled] : items)
+            result.append({item, enabled});
+        m_bus.send(message.createReply(QVariant::fromValue(result)));
+    });
+    return {};
+}
+
+void DaemonService::SetSiteExclusionEnabled(const QString &item, bool enabled, const QStringList &members)
+{
+    authorized(ActionControl, [this, item, enabled, members](const QDBusMessage &message) {
+        m_vpn->setSiteExclusionEnabled(item, enabled, members,
+                                       [this, message](const Error &error) { replyDone(message, error); });
+    });
+}
+
 void DaemonService::AddSiteExclusions(const QStringList &items)
 {
     authorized(ActionControl, [this, items](const QDBusMessage &message) {

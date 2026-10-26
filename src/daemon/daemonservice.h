@@ -71,6 +71,8 @@ public slots:
 
     void SetSiteExclusionMode(const QString &mode);
     QStringList GetSiteExclusions();
+    AgvSiteExclusionList ListSiteExclusions();
+    void SetSiteExclusionEnabled(const QString &item, bool enabled, const QStringList &members);
     void AddSiteExclusions(const QStringList &items);
     void RemoveSiteExclusions(const QStringList &items);
 

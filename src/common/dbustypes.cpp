@@ -66,6 +66,22 @@ const QDBusArgument &operator>>(const QDBusArgument &arg, AgvAppTraffic &value)
     return arg;
 }
 
+QDBusArgument &operator<<(QDBusArgument &arg, const AgvSiteExclusion &value)
+{
+    arg.beginStructure();
+    arg << value.item << value.enabled;
+    arg.endStructure();
+    return arg;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &arg, AgvSiteExclusion &value)
+{
+    arg.beginStructure();
+    arg >> value.item >> value.enabled;
+    arg.endStructure();
+    return arg;
+}
+
 QDBusArgument &operator<<(QDBusArgument &arg, const AgvExternalVpn &value)
 {
     arg.beginStructure();
@@ -96,6 +112,8 @@ void registerDBusTypes()
     qDBusRegisterMetaType<AgvAppTrafficList>();
     qDBusRegisterMetaType<AgvExternalVpn>();
     qDBusRegisterMetaType<AgvExternalVpnList>();
+    qDBusRegisterMetaType<AgvSiteExclusion>();
+    qDBusRegisterMetaType<AgvSiteExclusionList>();
 }
 
 } // namespace agv

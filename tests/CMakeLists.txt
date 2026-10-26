@@ -5,6 +5,10 @@ target_link_libraries(tst_cliparser PRIVATE agv-common Qt6::Test)
 target_compile_definitions(tst_cliparser PRIVATE AGV_FIXTURES_DIR="${fixtures_dir}")
 add_test(NAME cliparser COMMAND tst_cliparser)
 
+add_executable(tst_siteexclusion tst_siteexclusion.cpp)
+target_link_libraries(tst_siteexclusion PRIVATE agv-common Qt6::Test)
+add_test(NAME siteexclusion COMMAND tst_siteexclusion)
+
 add_executable(tst_vpnservice tst_vpnservice.cpp)
 target_link_libraries(tst_vpnservice PRIVATE agvd-core Qt6::Test)
 target_compile_definitions(tst_vpnservice PRIVATE

@@ -10,8 +10,24 @@ Item {
     // Development hook for --screenshot (AGV_SCREENSHOT_STATE=apps or apps-picker).
     readonly property string shotState: Window.window ? Window.window.screenshotState : ""
     property string tab: shotState.startsWith("apps") ? "apps" : "sites"
-    onShotStateChanged: if (shotState === "apps-picker") picker.open()
+    onShotStateChanged: {
+        if (shotState === "apps-picker")
+            picker.open()
+        else if (shotState.startsWith("sites-input:"))
+            input.text = shotState.slice(12)
+        else if (shotState.startsWith("sites-open:"))
+            toggleExpanded(shotState.slice(11))
+    }
     readonly property bool general: Daemon.siteExclusionMode !== "selective"
+    // Live check of what is typed in the add field; "domain.net" always brings "*.domain.net".
+    readonly property var siteCheck: Daemon.checkSites(input.text, true)
+    // Sites whose subdomain rows are unfolded.
+    property var expanded: ({})
+    function toggleExpanded(item) {
+        const copy = Object.assign({}, expanded)
+        copy[item] = !copy[item]
+        expanded = copy
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -63,30 +79,61 @@ Item {
                         wrapMode: Text.Wrap
                         Layout.fillWidth: true
                     }
+                    SettingRow {
+                        readonly property var early: Daemon.config["Exclusions TCP early ACK"]
+                        visible: early !== undefined
+                        title: qsTr("Recognize sites before connecting")
+                        hint: qsTr("Makes the list work in browsers with their own secure DNS (DoH) from the first request.")
+                        checked: early !== undefined && early.value === "on"
+                        onToggled: (checked) => Daemon.setConfig("exclusions-tcp-early-ack", checked ? "on" : "off")
+                    }
                 }
             }
 
-            RowLayout {
-                spacing: 8
+            ColumnLayout {
+                spacing: 6
                 Layout.fillWidth: true
-                InputField {
-                    id: input
-                    iconName: "plus"
-                    placeholderText: qsTr("example.com, *.example.org, 1.2.3.4")
+
+                RowLayout {
+                    spacing: 8
                     Layout.fillWidth: true
-                    onAccepted: add()
-                    function add() {
-                        if (text.trim() === "")
-                            return
-                        Daemon.addSiteExclusions(text)
-                        text = ""
+                    InputField {
+                        id: input
+                        iconName: "plus"
+                        placeholderText: qsTr("example.com, .ru, 1.2.3.4, https://site.com/page")
+                        Layout.fillWidth: true
+                        onAccepted: add()
+                        function add() {
+                            if (page.siteCheck.entries.length === 0)
+                                return
+                            Daemon.addSiteExclusions(text, true)
+                            text = ""
+                        }
+                    }
+                    FlatButton {
+                        kind: "primary"
+                        text: qsTr("Add")
+                        enabled: page.siteCheck.entries.length > 0 && Daemon.available
+                        onClicked: input.add()
                     }
                 }
-                FlatButton {
-                    kind: "primary"
-                    text: qsTr("Add")
-                    enabled: input.text.trim() !== "" && Daemon.available
-                    onClicked: input.add()
+
+                // What the input turns into, or why it cannot be added.
+                Text {
+                    visible: input.text.trim() !== "" && page.siteCheck.entries.length > 0
+                    text: qsTr("Will add: %1").arg(page.siteCheck.entries.join(", "))
+                    color: Theme.textSecondary
+                    font.pixelSize: Theme.fontSmall
+                    wrapMode: Text.Wrap
+                    Layout.fillWidth: true
+                }
+                Text {
+                    visible: input.text.trim() !== "" && page.siteCheck.problems.length > 0
+                    text: page.siteCheck.problems.join("\n")
+                    color: Theme.danger
+                    font.pixelSize: Theme.fontSmall
+                    wrapMode: Text.Wrap
+                    Layout.fillWidth: true
                 }
             }
 
@@ -94,7 +141,7 @@ Item {
                 id: list
                 model: Daemon.siteExclusionModel
                 clip: true
-                spacing: 2
+                spacing: 0
                 boundsBehavior: Flickable.StopAtBounds
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -103,8 +150,36 @@ Item {
                 delegate: Rectangle {
                     id: row
                     required property string item
+                    required property bool on
+                    required property string kind
+                    required property string site
+                    required property bool siteOn
+                    required property int subCount
+                    required property int subOn
+
+                    readonly property bool child: site !== ""
+                    // In effect: on, and under a site that is on.
+                    readonly property bool active: on && siteOn
+                    readonly property bool open: page.expanded[item] === true
+                    readonly property string note: {
+                        if (subCount > 0 && !open && kind !== "subdomains") {
+                            if (subOn === subCount)
+                                return qsTr("with subdomains")
+                            return subOn === 0 ? qsTr("subdomains off") : qsTr("some subdomains off")
+                        }
+                        switch (kind) {
+                        case "subdomains": return qsTr("all subdomains")
+                        case "zone": return qsTr("the whole .%1 zone").arg(item.slice(2))
+                        case "range": return qsTr("address range")
+                        case "legacy": return qsTr("old format, may not work; remove and add again")
+                        default: return ""
+                        }
+                    }
+
+                    // Subdomain rows only show under an unfolded site.
+                    visible: !child || page.expanded[site] === true
                     width: ListView.view.width
-                    height: 44
+                    height: visible ? 44 : 0
                     radius: Theme.radiusSmall
                     color: rowMouse.containsMouse ? Theme.surfaceHover : "transparent"
 
@@ -112,18 +187,59 @@ Item {
                         id: rowMouse
                         anchors.fill: parent
                         hoverEnabled: true
+                        cursorShape: row.subCount > 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        onClicked: if (row.subCount > 0) page.toggleExpanded(row.item)
                     }
                     RowLayout {
                         anchors.fill: parent
-                        anchors.leftMargin: 12
+                        anchors.leftMargin: row.child ? 62 : 4
                         anchors.rightMargin: 4
-                        AppIcon { name: "globe"; size: 18; color: Theme.textSecondary }
+                        spacing: 6
+
+                        // Fold arrow for sites with subdomain rows; same width otherwise to keep alignment.
+                        Item {
+                            visible: !row.child
+                            implicitWidth: 28
+                            implicitHeight: 28
+                            AppIcon {
+                                anchors.centerIn: parent
+                                visible: row.subCount > 0
+                                name: "chevron"
+                                size: 16
+                                color: Theme.textSecondary
+                                rotation: row.open ? 90 : 0
+                                Behavior on rotation { NumberAnimation { duration: Theme.animFast } }
+                            }
+                        }
+                        AppIcon {
+                            name: "globe"
+                            size: row.child ? 16 : 18
+                            color: Theme.textSecondary
+                            opacity: row.active ? 1 : 0.5
+                        }
                         Text {
                             text: row.item
-                            color: Theme.text
-                            font.pixelSize: Theme.fontBody
+                            color: row.active ? Theme.text : Theme.textDisabled
+                            font.pixelSize: row.child ? Theme.fontSmall + 1 : Theme.fontBody
+                            font.strikeout: !row.active
                             elide: Text.ElideMiddle
+                            Layout.leftMargin: 4
+                            Layout.maximumWidth: row.width * 0.5
+                        }
+                        Text {
+                            text: row.note
+                            color: row.kind === "legacy" ? Theme.warning : Theme.textSecondary
+                            font.pixelSize: Theme.fontSmall
+                            elide: Text.ElideRight
+                            Layout.leftMargin: 4
                             Layout.fillWidth: true
+                        }
+                        Toggle {
+                            checked: row.on
+                            // Under a switched-off site only the site's own switch matters.
+                            enabled: row.siteOn
+                            opacity: enabled ? 1 : 0.4
+                            onToggled: (checked) => Daemon.setSiteExclusionEnabled(row.item, checked)
                         }
                         FlatButton {
                             kind: "subtle"

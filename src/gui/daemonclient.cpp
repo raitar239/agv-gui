@@ -2,6 +2,7 @@
 
 #include "keyedlistmodel.h"
 #include "locationmodel.h"
+#include "siteexclusion.h"
 
 #include <QDBusArgument>
 #include <QDBusMessage>
@@ -11,9 +12,11 @@
 #include <QDesktopServices>
 #include <QFile>
 #include <QRegularExpression>
+#include <QSet>
 #include <QUrl>
 
 #include <algorithm>
+#include <tuple>
 
 namespace agv {
 
@@ -31,7 +34,7 @@ DaemonClient::DaemonClient(QDBusConnection bus, QObject *parent)
     , m_watcher(new QDBusServiceWatcher(DBusService, m_bus,
                                         QDBusServiceWatcher::WatchForOwnerChange, this))
     , m_locations(new LocationModel(this))
-    , m_siteModel(new KeyedListModel("item", {"item"}, this))
+    , m_siteModel(new KeyedListModel("item", {"item", "on", "kind", "site", "siteOn", "subCount", "subOn"}, this))
     , m_appModel(new KeyedListModel("id", {"id", "name", "icon", "desktop_file", "exe", "cmdline_match", "enabled",
                                            "bytes_out", "bytes_in"}, this))
 {
@@ -122,40 +125,173 @@ void DaemonClient::refreshLocations()
 
 void DaemonClient::refreshSiteExclusions()
 {
-    call(QStringLiteral("GetSiteExclusions"), {}, [this](const QDBusMessage &reply) {
-        QStringList items = reply.arguments().value(0).toStringList();
-        items.sort(Qt::CaseInsensitive);
-        if (items != m_siteExclusions || !m_siteExclusionsLoaded) {
-            m_siteExclusions = items;
-            m_siteExclusionsLoaded = true;
-            QList<QVariantMap> rows;
-            for (const QString &item : items)
-                rows.append({{QStringLiteral("item"), item}});
-            m_siteModel->setRows(rows);
-            emit siteExclusionsChanged();
+    call(QStringLiteral("ListSiteExclusions"), {}, [this](const QDBusMessage &reply) {
+        auto entries = qdbus_cast<AgvSiteExclusionList>(reply.arguments().value(0));
+        // "domain.net" first, then "*.domain.net", then the next domain; addresses last.
+        std::sort(entries.begin(), entries.end(), [](const AgvSiteExclusion &a, const AgvSiteExclusion &b) {
+            return site::sortKey(a.item) < site::sortKey(b.item);
+        });
+
+        QSet<QString> present;
+        for (const AgvSiteExclusion &entry : entries)
+            present.insert(entry.item);
+
+        // The entry that heads the group of everything under domain "a": "a", else "www.a", else "*.a".
+        const auto headOf = [&present](const QString &a) {
+            for (const QString &candidate : {a, QStringLiteral("www.") + a, QStringLiteral("*.") + a}) {
+                if (present.contains(candidate))
+                    return candidate;
+            }
+            return QString();
+        };
+
+        QList<QVariantMap> top;
+        QHash<QString, QList<QVariantMap>> children;  // group head → its rows
+        for (const AgvSiteExclusion &entry : entries) {
+            // domain, subdomains (*.domain.net), zone (*.ru), address, range; legacy for entries
+            // the CLI kept from before that do not fit its own syntax (e.g. a bare "ru").
+            const site::Parsed parsed = site::parse(entry.item);
+            QString kind = QStringLiteral("legacy");
+            if (parsed.ok() && parsed.value == entry.item) {
+                switch (parsed.kind) {
+                case site::Kind::Domain: kind = QStringLiteral("domain"); break;
+                case site::Kind::Address: kind = QStringLiteral("address"); break;
+                case site::Kind::Range: kind = QStringLiteral("range"); break;
+                case site::Kind::Wildcard:
+                    kind = entry.item.indexOf(QLatin1Char('.'), 2) > 0 ? QStringLiteral("subdomains")
+                                                                         : QStringLiteral("zone");
+                    break;
+                }
+            }
+            // Sites fold under the shortest listed domain above them: "cs.avito.ru" and "*.avito.ru"
+            // under "avito.ru". Zones (*.ru) and addresses stand alone.
+            QString head;
+            if (kind == QLatin1String("domain") || kind == QLatin1String("subdomains")) {
+                const QStringList labels = (kind == QLatin1String("subdomains") ? entry.item.mid(2) : entry.item)
+                                               .split(QLatin1Char('.'));
+                for (qsizetype i = labels.size() - 2; i >= 0 && head.isEmpty(); --i)
+                    head = headOf(labels.mid(i).join(QLatin1Char('.')));
+                if (head == entry.item)
+                    head.clear();
+            }
+            const QVariantMap row{{QStringLiteral("item"), entry.item},
+                                  {QStringLiteral("on"), entry.enabled},
+                                  {QStringLiteral("kind"), kind},
+                                  {QStringLiteral("site"), head},
+                                  {QStringLiteral("siteOn"), true},
+                                  {QStringLiteral("subCount"), 0},
+                                  {QStringLiteral("subOn"), 0}};
+            if (head.isEmpty())
+                top.append(row);
+            else
+                children[head].append(row);
         }
+
+        // Sites by name (avito.ru, *.github.com, ozon.ru), then zones, addresses, leftovers.
+        const auto order = [](const QVariantMap &row) {
+            static const QStringList kinds{QStringLiteral("domain"), QStringLiteral("subdomains"),
+                                           QStringLiteral("zone"), QStringLiteral("address"),
+                                           QStringLiteral("range"), QStringLiteral("legacy")};
+            const QString item = row.value(QStringLiteral("item")).toString();
+            // "domain.net" and a lone "*.domain.net" sort together.
+            const int group = qMax(1, int(kinds.indexOf(row.value(QStringLiteral("kind")).toString())));
+            QString name = item;
+            if (name.startsWith(QLatin1String("*.")))
+                name.remove(0, 2);
+            else if (name.startsWith(QLatin1String("www.")))
+                name.remove(0, 4);
+            return std::make_tuple(group, name, item);
+        };
+        std::stable_sort(top.begin(), top.end(),
+                         [&order](const QVariantMap &a, const QVariantMap &b) { return order(a) < order(b); });
+
+        // Each site followed by its folded rows. Under a switched-off site they keep their own "on"
+        // but are not in effect.
+        QList<QVariantMap> rows;
+        QStringList active;
+        m_siteGroups.clear();
+        for (QVariantMap row : std::as_const(top)) {
+            const QString item = row.value(QStringLiteral("item")).toString();
+            const bool on = row.value(QStringLiteral("on")).toBool();
+            QList<QVariantMap> sub = children.value(item);
+            int subOn = 0;
+            for (QVariantMap &member : sub) {
+                member[QStringLiteral("siteOn")] = on;
+                m_siteGroups[item].append(member.value(QStringLiteral("item")).toString());
+                if (member.value(QStringLiteral("on")).toBool()) {
+                    ++subOn;
+                    if (on)
+                        active.append(member.value(QStringLiteral("item")).toString());
+                }
+            }
+            if (on)
+                active.append(item);
+            row[QStringLiteral("subCount")] = int(sub.size());
+            row[QStringLiteral("subOn")] = subOn;
+            rows.append(row);
+            rows.append(sub);
+        }
+
+        m_siteExclusions = active;
+        m_siteExclusionsLoaded = true;
+        m_siteModel->setRows(rows);
+        emit siteExclusionsChanged();
     });
 }
 
-void DaemonClient::addSiteExclusions(const QString &text)
+QVariantMap DaemonClient::checkSites(const QString &text, bool includeSubdomains) const
 {
-    // Accept anything pasted: spaces, commas, new lines; strip schemes and paths from URLs.
-    static const QRegularExpression separators(QStringLiteral("[\\s,;]+"));
-    QStringList items;
-    for (QString item : text.split(separators, Qt::SkipEmptyParts)) {
-        const QUrl url(item);
-        if (url.isValid() && !url.host().isEmpty() && !url.scheme().isEmpty())
-            item = url.host();
-        items.append(item.toLower());
+    QStringList entries;
+    QStringList problems;
+    for (const site::Parsed &parsed : site::parseList(text)) {
+        if (parsed.ok()) {
+            for (const QString &entry : site::expand(parsed, includeSubdomains)) {
+                if (!entries.contains(entry))
+                    entries.append(entry);
+            }
+            continue;
+        }
+        switch (parsed.problem) {
+        case site::Problem::StarWithoutDot:
+            problems.append(tr("“%1”: write %2 for all subdomains").arg(parsed.input, parsed.suggestion));
+            break;
+        case site::Problem::StarInside:
+            problems.append(tr("“%1”: * is only allowed at the start, as *.domain").arg(parsed.input));
+            break;
+        case site::Problem::BareZone:
+            problems.append(tr("“%1”: for the whole zone write %2").arg(parsed.input, parsed.suggestion));
+            break;
+        default:
+            problems.append(tr("“%1” is not a domain, IP address or range").arg(parsed.input));
+            break;
+        }
     }
-    if (items.isEmpty())
+    return {{QStringLiteral("entries"), entries}, {QStringLiteral("problems"), problems}};
+}
+
+void DaemonClient::addSiteExclusions(const QString &text, bool includeSubdomains)
+{
+    const QVariantMap check = checkSites(text, includeSubdomains);
+    const QStringList problems = check.value(QStringLiteral("problems")).toStringList();
+    if (!problems.isEmpty())
+        emit errorOccurred(problems.first());
+    const QStringList entries = check.value(QStringLiteral("entries")).toStringList();
+    if (entries.isEmpty())
         return;
-    call(QStringLiteral("AddSiteExclusions"), {items}, [this](const QDBusMessage &) { refreshSiteExclusions(); });
+    call(QStringLiteral("AddSiteExclusions"), {entries}, [this](const QDBusMessage &) { refreshSiteExclusions(); });
+}
+
+void DaemonClient::setSiteExclusionEnabled(const QString &item, bool enabled)
+{
+    // A site switches the rows folded under it along with itself.
+    call(QStringLiteral("SetSiteExclusionEnabled"), {item, enabled, m_siteGroups.value(item)},
+         [this](const QDBusMessage &) { refreshSiteExclusions(); });
 }
 
 void DaemonClient::removeSiteExclusion(const QString &item)
 {
-    call(QStringLiteral("RemoveSiteExclusions"), {QStringList{item}},
+    // Removing a site removes the rows folded under it too.
+    call(QStringLiteral("RemoveSiteExclusions"), {QStringList{item} + m_siteGroups.value(item)},
          [this](const QDBusMessage &) { refreshSiteExclusions(); });
 }
 

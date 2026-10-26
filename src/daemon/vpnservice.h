@@ -65,6 +65,12 @@ public:
     void siteExclusions(Reply<QStringList> reply);
     void addSiteExclusions(const QStringList &items, Done done);
     void removeSiteExclusions(const QStringList &items, Done done);
+    // Active (from the CLI) and switched-off (kept by agvd) entries of the current mode.
+    void listSiteExclusions(Reply<QList<QPair<QString, bool>>> reply);
+    // Off removes the entry from the CLI but remembers it; on adds it back. members are the
+    // entries folded under it in the GUI ("*.a.com", "cs.a.com" under "a.com"): they go off with it,
+    // and on again with it unless they were switched off on their own before.
+    void setSiteExclusionEnabled(const QString &item, bool enabled, const QStringList &members, Done done);
     void setSiteExclusionMode(const QString &mode, Done done);
 
     void config(Reply<QMap<QString, cli::ConfigValue>> reply);
@@ -99,6 +105,15 @@ private:
     void setLastError(const QString &message);
     void updateExternalVpns();
     void refreshSiteExclusionMode();
+    QString disabledSitesPath() const;
+    // Switched off by the user, and held off only because the site above them is.
+    QStringList disabledSites() const { return storedSites(currentSiteMode()); }
+    QStringList heldSites() const { return storedSites(currentSiteMode() + QStringLiteral("-held")); }
+    void saveDisabledSites(const QStringList &items) { saveStoredSites(currentSiteMode(), items); }
+    void saveHeldSites(const QStringList &items) { saveStoredSites(currentSiteMode() + QStringLiteral("-held"), items); }
+    QStringList storedSites(const QString &key) const;
+    void saveStoredSites(const QString &key, const QStringList &items);
+    QString currentSiteMode() const;
     void schedulePoll();
     void tryAutoConnect();
     Error errorFor(const QStringList &args, int exitCode, const QString &output, bool timedOut,

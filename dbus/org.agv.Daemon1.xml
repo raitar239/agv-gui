@@ -88,6 +88,20 @@
     <method name="GetSiteExclusions">
       <arg name="items" type="as" direction="out"/>
     </method>
+    <!-- Active entries plus the ones switched off in AGV (kept by agvd, not in the CLI): (item, enabled) -->
+    <method name="ListSiteExclusions">
+      <arg name="items" type="a(sb)" direction="out"/>
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="AgvSiteExclusionList"/>
+    </method>
+    <!-- Off removes the entry from the CLI and remembers it; on adds it back. members (the entries
+         shown under it, e.g. "*.a.com" under "a.com") go off with it and come back with it, except
+         those already switched off on their own. -->
+    <method name="SetSiteExclusionEnabled">
+      <arg name="item" type="s" direction="in"/>
+      <arg name="enabled" type="b" direction="in"/>
+      <arg name="members" type="as" direction="in"/>
+    </method>
+    <!-- Only forms the CLI accepts: domain, www.domain, *.domain, IPv4[:port], IPv6, [IPv6][:port], CIDR -->
     <method name="AddSiteExclusions">
       <arg name="items" type="as" direction="in"/>
     </method>

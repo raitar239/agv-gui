@@ -106,7 +106,11 @@ public:
 
     Q_INVOKABLE void refreshLocations();
     Q_INVOKABLE void refreshSiteExclusions();
-    Q_INVOKABLE void addSiteExclusions(const QString &text);
+    // Adds what was typed or pasted; with includeSubdomains "domain.net" brings "*.domain.net".
+    Q_INVOKABLE void addSiteExclusions(const QString &text, bool includeSubdomains = true);
+    // Live check of the input: { entries: [what would be added], problems: [explanations] }.
+    Q_INVOKABLE QVariantMap checkSites(const QString &text, bool includeSubdomains = true) const;
+    Q_INVOKABLE void setSiteExclusionEnabled(const QString &item, bool enabled);
     Q_INVOKABLE void removeSiteExclusion(const QString &item);
     Q_INVOKABLE void setSiteExclusionMode(const QString &mode);
 
@@ -176,7 +180,8 @@ private:
     int m_busy = 0;
     QVariantMap m_props;
     int m_externalVpnCount = 0;
-    QStringList m_siteExclusions;
+    QStringList m_siteExclusions;  // in effect
+    QHash<QString, QStringList> m_siteGroups;  // site → entries folded under it
     bool m_siteExclusionsLoaded = false;
     QVariantMap m_license;
     AgvAppExclusionList m_appRules;

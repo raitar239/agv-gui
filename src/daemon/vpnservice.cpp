@@ -1,10 +1,16 @@
 #include "vpnservice.h"
 
 #include "clirunner.h"
+#include "siteexclusion.h"
 
+#include <QFile>
 #include <QFileInfo>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QProcess>
 #include <QRegularExpression>
+#include <QSaveFile>
 #include <QTimer>
 
 #include <algorithm>
@@ -354,8 +360,9 @@ void VpnService::siteExclusions(Reply<QStringList> reply)
 
 void VpnService::addSiteExclusions(const QStringList &items, Done done)
 {
+    // New entries must be exactly what the CLI understands.
     for (const QString &item : items) {
-        if (!isValidExclusion(item)) {
+        if (!site::isValid(item)) {
             done({errors::InvalidArgument, QStringLiteral("Invalid exclusion: %1").arg(item)});
             return;
         }
@@ -366,32 +373,166 @@ void VpnService::addSiteExclusions(const QStringList &items, Done done)
     }
 
     runChecked(QStringList{QStringLiteral("site-exclusions"), QStringLiteral("add")} + items,
-               [this, done](const QString &, const Error &error) {
-        if (error.isOk())
+               [this, items, done](const QString &, const Error &error) {
+        if (error.isOk()) {
+            // Adding an entry that was switched off switches it back on.
+            QStringList disabled = disabledSites();
+            QStringList held = heldSites();
+            for (const QString &item : items) {
+                disabled.removeAll(item);
+                held.removeAll(item);
+            }
+            saveDisabledSites(disabled);
+            saveHeldSites(held);
             emit siteExclusionsChanged();
+        }
         done(error);
     });
 }
 
 void VpnService::removeSiteExclusions(const QStringList &items, Done done)
 {
+    // Removal stays lenient so entries from older versions or the plain CLI can go too.
     for (const QString &item : items) {
         if (!isValidExclusion(item)) {
             done({errors::InvalidArgument, QStringLiteral("Invalid exclusion: %1").arg(item)});
             return;
         }
     }
-    if (items.isEmpty()) {
+
+    // Switched-off entries live only in our store; the rest are removed from the CLI.
+    QStringList disabled = disabledSites();
+    QStringList held = heldSites();
+    QStringList fromCli;
+    for (const QString &item : items) {
+        if (!disabled.removeAll(item) && !held.removeAll(item))
+            fromCli.append(item);
+    }
+    saveDisabledSites(disabled);
+    saveHeldSites(held);
+    if (fromCli.isEmpty()) {
+        emit siteExclusionsChanged();
         done({});
         return;
     }
 
-    runChecked(QStringList{QStringLiteral("site-exclusions"), QStringLiteral("remove")} + items,
+    runChecked(QStringList{QStringLiteral("site-exclusions"), QStringLiteral("remove")} + fromCli,
                [this, done](const QString &, const Error &error) {
-        if (error.isOk())
-            emit siteExclusionsChanged();
+        emit siteExclusionsChanged();
         done(error);
     });
+}
+
+void VpnService::listSiteExclusions(Reply<QList<QPair<QString, bool>>> reply)
+{
+    siteExclusions([this, reply](const QStringList &active, const Error &error) {
+        if (!error.isOk()) {
+            reply({}, error);
+            return;
+        }
+        QList<QPair<QString, bool>> result;
+        for (const QString &item : active)
+            result.append({item, true});
+        for (const QString &item : disabledSites()) {
+            if (!active.contains(item))
+                result.append({item, false});
+        }
+        // Held entries keep their own "on": the GUI shows them under the switched-off site.
+        for (const QString &item : heldSites()) {
+            if (!active.contains(item))
+                result.append({item, true});
+        }
+        reply(result, {});
+    });
+}
+
+void VpnService::setSiteExclusionEnabled(const QString &item, bool enabled, const QStringList &members, Done done)
+{
+    for (const QString &entry : QStringList{item} + members) {
+        if (!isValidExclusion(entry)) {
+            done({errors::InvalidArgument, QStringLiteral("Invalid exclusion: %1").arg(entry)});
+            return;
+        }
+    }
+    const QStringList disabled = disabledSites();
+    const QStringList held = heldSites();
+    if (enabled) {
+        // Back on together with the members it held off.
+        QStringList items{item};
+        for (const QString &member : members) {
+            if (held.contains(member))
+                items.append(member);
+        }
+        addSiteExclusions(items, std::move(done));
+        return;
+    }
+
+    // Off: out of the CLI's list, remembered here so it can come back. Members still on are held.
+    QStringList hold;
+    for (const QString &member : members) {
+        if (!disabled.contains(member) && !held.contains(member))
+            hold.append(member);
+    }
+    runChecked(QStringList{QStringLiteral("site-exclusions"), QStringLiteral("remove"), item} + hold,
+               [this, item, hold, done](const QString &, const Error &error) {
+        if (error.isOk()) {
+            QStringList disabled = disabledSites();
+            if (!disabled.contains(item))
+                disabled.append(item);
+            saveDisabledSites(disabled);
+            QStringList held = heldSites();
+            for (const QString &member : hold) {
+                if (!held.contains(member))
+                    held.append(member);
+            }
+            saveHeldSites(held);
+            emit siteExclusionsChanged();
+        }
+        done(error);
+    });
+}
+
+QString VpnService::disabledSitesPath() const
+{
+    return m_cli->home() + QStringLiteral("/site-exclusions-disabled.json");
+}
+
+QStringList VpnService::storedSites(const QString &key) const
+{
+    // { "general": [...], "general-held": [...], "selective": [...], ... }: the CLI keeps one list
+    // per mode, and so do we.
+    QFile file(disabledSitesPath());
+    if (!file.open(QIODevice::ReadOnly))
+        return {};
+    const QJsonObject root = QJsonDocument::fromJson(file.readAll()).object();
+    QStringList items;
+    for (const QJsonValue &value : root.value(key).toArray())
+        items.append(value.toString());
+    return items;
+}
+
+void VpnService::saveStoredSites(const QString &key, const QStringList &items)
+{
+    QJsonObject root;
+    QFile in(disabledSitesPath());
+    if (in.open(QIODevice::ReadOnly))
+        root = QJsonDocument::fromJson(in.readAll()).object();
+    if (items.isEmpty())
+        root.remove(key);
+    else
+        root.insert(key, QJsonArray::fromStringList(items));
+
+    QSaveFile out(disabledSitesPath());
+    if (!out.open(QIODevice::WriteOnly))
+        return;
+    out.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+    out.write(QJsonDocument(root).toJson());
+    out.commit();
+}
+
+QString VpnService::currentSiteMode() const
+{
+    return m_siteExclusionMode.isEmpty() ? QStringLiteral("general") : m_siteExclusionMode;
 }
 
 void VpnService::setSiteExclusionMode(const QString &mode, Done done)

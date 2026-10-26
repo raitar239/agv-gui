@@ -67,128 +67,178 @@
 <context>
     <name>ExclusionsPage</name>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="25"/>
+        <location filename="../qml/ExclusionsPage.qml" line="41"/>
         <source>Exclusions</source>
         <translation>Исключения</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="32"/>
+        <location filename="../qml/ExclusionsPage.qml" line="48"/>
         <source>Websites</source>
         <translation>Сайты</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="32"/>
+        <location filename="../qml/ExclusionsPage.qml" line="48"/>
         <source>Apps</source>
         <translation>Приложения</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="51"/>
+        <location filename="../qml/ExclusionsPage.qml" line="67"/>
         <source>General</source>
         <translation>Общий</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="52"/>
+        <location filename="../qml/ExclusionsPage.qml" line="68"/>
         <source>Selective</source>
         <translation>Выборочный</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="59"/>
+        <location filename="../qml/ExclusionsPage.qml" line="75"/>
         <source>VPN works everywhere except the websites below.</source>
         <translation>VPN работает везде, кроме сайтов из списка.</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="60"/>
+        <location filename="../qml/ExclusionsPage.qml" line="76"/>
         <source>VPN works only for the websites below.</source>
         <translation>VPN работает только для сайтов из списка.</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="75"/>
-        <source>example.com, *.example.org, 1.2.3.4</source>
-        <translation>example.com, *.example.org, 1.2.3.4</translation>
+        <location filename="../qml/ExclusionsPage.qml" line="85"/>
+        <source>Recognize sites before connecting</source>
+        <translation>Распознавать сайты до подключения</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="87"/>
+        <location filename="../qml/ExclusionsPage.qml" line="86"/>
+        <source>Makes the list work in browsers with their own secure DNS (DoH) from the first request.</source>
+        <translation>Список работает с первого запроса и в браузерах со своим защищённым DNS (DoH).</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExclusionsPage.qml" line="103"/>
+        <source>example.com, .ru, 1.2.3.4, https://site.com/page</source>
+        <translation>example.com, .ru, 1.2.3.4, https://site.com/page</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExclusionsPage.qml" line="115"/>
         <source>Add</source>
         <translation>Добавить</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="142"/>
+        <location filename="../qml/ExclusionsPage.qml" line="124"/>
+        <source>Will add: %1</source>
+        <translation>Будет добавлено: %1</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExclusionsPage.qml" line="167"/>
+        <source>with subdomains</source>
+        <translation>с поддоменами</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExclusionsPage.qml" line="168"/>
+        <source>subdomains off</source>
+        <translation>поддомены выключены</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExclusionsPage.qml" line="168"/>
+        <source>some subdomains off</source>
+        <translation>часть поддоменов выключена</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExclusionsPage.qml" line="171"/>
+        <source>all subdomains</source>
+        <translation>все поддомены</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExclusionsPage.qml" line="172"/>
+        <source>the whole .%1 zone</source>
+        <translation>вся зона .%1</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExclusionsPage.qml" line="173"/>
+        <source>address range</source>
+        <translation>диапазон адресов</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExclusionsPage.qml" line="174"/>
+        <source>old format, may not work; remove and add again</source>
+        <translation>старый формат, может не работать — удалите и добавьте снова</translation>
+    </message>
+    <message>
+        <location filename="../qml/ExclusionsPage.qml" line="258"/>
         <source>No websites yet. Add a domain above.</source>
         <translation>Список пуст. Добавьте домен выше.</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="143"/>
-        <location filename="../qml/ExclusionsPage.qml" line="303"/>
+        <location filename="../qml/ExclusionsPage.qml" line="259"/>
+        <location filename="../qml/ExclusionsPage.qml" line="419"/>
         <source>Loading…</source>
         <translation>Загрузка…</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="163"/>
+        <location filename="../qml/ExclusionsPage.qml" line="279"/>
         <source>SOCKS5 mode: app exclusions do not apply</source>
         <translation>Режим SOCKS5: исключения приложений не действуют</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="164"/>
+        <location filename="../qml/ExclusionsPage.qml" line="280"/>
         <source>Only programs set to use the proxy go through the VPN, everything else goes direct. Switch to TUN in Settings to use the list below.</source>
         <translation>Через VPN идут только программы, настроенные на прокси, остальное — напрямую. Чтобы работал список ниже, включите TUN в настройках.</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="171"/>
+        <location filename="../qml/ExclusionsPage.qml" line="287"/>
         <source>App exclusions are not available</source>
         <translation>Исключения приложений недоступны</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="172"/>
+        <location filename="../qml/ExclusionsPage.qml" line="288"/>
         <source>They need cgroup v2, nftables and the agvd service running as root.</source>
         <translation>Нужны cgroup v2, nftables и служба agvd, запущенная от root.</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="183"/>
+        <location filename="../qml/ExclusionsPage.qml" line="299"/>
         <source>Bypass VPN</source>
         <translation>Мимо VPN</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="184"/>
+        <location filename="../qml/ExclusionsPage.qml" line="300"/>
         <source>Only via VPN</source>
         <translation>Только через VPN</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="191"/>
+        <location filename="../qml/ExclusionsPage.qml" line="307"/>
         <source>Only the apps below use the VPN. Everything else on this computer goes straight to the internet.</source>
         <translation>VPN используют только приложения из списка. Всё остальное на этом компьютере идёт в интернет напрямую.</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="192"/>
+        <location filename="../qml/ExclusionsPage.qml" line="308"/>
         <source>The apps below go straight to the internet. Everything else uses the VPN.</source>
         <translation>Приложения из списка идут в интернет напрямую. Всё остальное — через VPN.</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="206"/>
+        <location filename="../qml/ExclusionsPage.qml" line="322"/>
         <source>Apps are matched however they are started: menu, terminal, Lutris, Steam.</source>
         <translation>Приложения распознаются при любом способе запуска: меню, терминал, Lutris, Steam.</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="215"/>
+        <location filename="../qml/ExclusionsPage.qml" line="331"/>
         <source>Add app</source>
         <translation>Добавить</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="270"/>
+        <location filename="../qml/ExclusionsPage.qml" line="386"/>
         <source>Command line: %1</source>
         <translation>Командная строка: %1</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="303"/>
+        <location filename="../qml/ExclusionsPage.qml" line="419"/>
         <source>No apps yet</source>
         <translation>Список пуст</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="312"/>
+        <location filename="../qml/ExclusionsPage.qml" line="428"/>
         <source>Add the programs that should use the VPN. You can also start anything through it with: agv-run &lt;command&gt;</source>
         <translation>Добавьте программы, которые должны работать через VPN. Любую программу можно запустить через VPN так: agv-run &lt;команда&gt;</translation>
     </message>
     <message>
-        <location filename="../qml/ExclusionsPage.qml" line="313"/>
+        <location filename="../qml/ExclusionsPage.qml" line="429"/>
         <source>Add a game or a program that should not use the VPN. You can also start anything outside the VPN with: agv-run &lt;command&gt;</source>
         <translation>Добавьте игру или программу, которой не нужен VPN. Любую программу можно запустить мимо VPN так: agv-run &lt;команда&gt;</translation>
     </message>
@@ -705,77 +755,97 @@
 <context>
     <name>agv::DaemonClient</name>
     <message>
-        <location filename="../daemonclient.cpp" line="201"/>
+        <location filename="../daemonclient.cpp" line="256"/>
+        <source>“%1”: write %2 for all subdomains</source>
+        <translation>«%1»: для всех поддоменов пишите %2</translation>
+    </message>
+    <message>
+        <location filename="../daemonclient.cpp" line="259"/>
+        <source>“%1”: * is only allowed at the start, as *.domain</source>
+        <translation>«%1»: * можно ставить только в начале, как *.domain</translation>
+    </message>
+    <message>
+        <location filename="../daemonclient.cpp" line="262"/>
+        <source>“%1”: for the whole zone write %2</source>
+        <translation>«%1»: для всей зоны пишите %2</translation>
+    </message>
+    <message>
+        <location filename="../daemonclient.cpp" line="265"/>
+        <source>“%1” is not a domain, IP address or range</source>
+        <translation>«%1» — не домен, не IP-адрес и не диапазон</translation>
+    </message>
+    <message>
+        <location filename="../daemonclient.cpp" line="337"/>
         <source>%1 now uses the VPN. Restart it if it was already running.</source>
         <translation>%1 теперь работает через VPN. Перезапустите, если уже было открыто.</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="202"/>
+        <location filename="../daemonclient.cpp" line="338"/>
         <source>%1 now bypasses the VPN. Restart it if it was already running.</source>
         <translation>%1 теперь работает мимо VPN. Перезапустите, если уже было открыто.</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="252"/>
+        <location filename="../daemonclient.cpp" line="388"/>
         <source>Saved. Reconnect to apply it.</source>
         <translation>Сохранено. Переподключитесь, чтобы применить.</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="254"/>
+        <location filename="../daemonclient.cpp" line="390"/>
         <source>Saved. Applies on the next connection.</source>
         <translation>Сохранено. Применится при следующем подключении.</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="366"/>
+        <location filename="../daemonclient.cpp" line="502"/>
         <source>Signed in with your adguardvpn-cli account</source>
         <translation>Вход выполнен через аккаунт из adguardvpn-cli</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="382"/>
+        <location filename="../daemonclient.cpp" line="518"/>
         <source>The login link from AdGuard VPN looks wrong: %1</source>
         <translation>Ссылка для входа от AdGuard VPN выглядит подозрительно: %1</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="386"/>
+        <location filename="../daemonclient.cpp" line="522"/>
         <source>Open this link to sign in: %1</source>
         <translation>Откройте ссылку, чтобы войти: %1</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="388"/>
+        <location filename="../daemonclient.cpp" line="524"/>
         <source>Confirm the sign-in in your browser</source>
         <translation>Подтвердите вход в браузере</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="396"/>
+        <location filename="../daemonclient.cpp" line="532"/>
         <source>Signed in</source>
         <translation>Вход выполнен</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="399"/>
+        <location filename="../daemonclient.cpp" line="535"/>
         <source>Sign-in failed: %1</source>
         <translation>Не удалось войти: %1</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="503"/>
+        <location filename="../daemonclient.cpp" line="639"/>
         <source>Sign in to AdGuard VPN first</source>
         <translation>Сначала войдите в AdGuard VPN</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="506"/>
+        <location filename="../daemonclient.cpp" line="642"/>
         <source>Not allowed: %1</source>
         <translation>Нет доступа: %1</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="508"/>
+        <location filename="../daemonclient.cpp" line="644"/>
         <source>This needs an administrator password</source>
         <translation>Нужен пароль администратора</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="511"/>
+        <location filename="../daemonclient.cpp" line="647"/>
         <source>The agvd service is not running</source>
         <translation>Служба agvd не запущена</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="514"/>
+        <location filename="../daemonclient.cpp" line="650"/>
         <source>The agvd service did not answer in time</source>
         <translation>Служба agvd не ответила вовремя</translation>
     </message>
