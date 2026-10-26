@@ -35,7 +35,8 @@ jobs:
           if command -v apt-get >/dev/null; then
             apt-get install -y -q --no-install-recommends ./dist/*.deb
           else
-            dnf install -y ./dist/*.rpm
+            # The build dependencies pull systemd-standalone-tmpfiles; real systems have systemd.
+            dnf install -y --allowerasing ./dist/*.rpm
           fi
           bash packaging/ci/smoke.sh
       - name: Name the package after the distribution
