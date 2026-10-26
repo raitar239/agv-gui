@@ -15,6 +15,8 @@ add_library(agvd-core STATIC
     execwatcher.cpp
     vpnservice.h
     vpnservice.cpp
+    dnsguard.h
+    dnsguard.cpp
     hostsystem.h
     killswitch.h
     killswitch.cpp

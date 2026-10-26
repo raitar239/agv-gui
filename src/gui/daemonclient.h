@@ -49,6 +49,7 @@ class DaemonClient : public QObject
     Q_PROPERTY(bool autoConnect READ autoConnect NOTIFY statusChanged)
     Q_PROPERTY(bool killSwitch READ killSwitch NOTIFY statusChanged)
     Q_PROPERTY(bool killSwitchAllowLan READ killSwitchAllowLan NOTIFY statusChanged)
+    Q_PROPERTY(bool keepDnsInVpn READ keepDnsInVpn NOTIFY statusChanged)
     // The VPN is down and the kill switch is holding traffic back.
     Q_PROPERTY(bool killSwitchActive READ killSwitchActive NOTIFY statusChanged)
     // The VPN dropped and agvd is connecting again.
@@ -97,6 +98,7 @@ public:
     bool autoConnect() const { return m_props.value(QStringLiteral("AutoConnect")).toBool(); }
     bool killSwitch() const { return m_props.value(QStringLiteral("KillSwitch")).toBool(); }
     bool killSwitchAllowLan() const { return m_props.value(QStringLiteral("KillSwitchAllowLan"), true).toBool(); }
+    bool keepDnsInVpn() const { return m_props.value(QStringLiteral("KeepDnsInVpn")).toBool(); }
     bool killSwitchActive() const { return m_props.value(QStringLiteral("KillSwitchActive")).toBool(); }
     bool reconnecting() const { return m_props.value(QStringLiteral("Reconnecting")).toBool(); }
     QVariantMap config() const { return m_config; }
@@ -152,6 +154,7 @@ public:
     Q_INVOKABLE void setAutoConnect(bool enabled);
     Q_INVOKABLE void setKillSwitch(bool enabled);
     Q_INVOKABLE void setKillSwitchAllowLan(bool enabled);
+    Q_INVOKABLE void setKeepDnsInVpn(bool enabled);
     // Reads the tunnel interface counters from sysfs (cheap; called by the UI while visible).
     Q_INVOKABLE void refreshTunnelTraffic();
 

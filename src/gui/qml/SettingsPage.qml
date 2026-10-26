@@ -152,6 +152,13 @@ Item {
                         onToggled: (checked) => Daemon.setKillSwitchAllowLan(checked)
                     }
                     SettingRow {
+                        title: qsTr("Keep DNS inside the VPN")
+                        hint: qsTr("Sends every program's DNS lookups through the VPN, even where the system asks the router, so your internet provider does not see the sites you open. Local names like router.lan do not resolve while connected.")
+                        checked: Daemon.keepDnsInVpn
+                        available: Daemon.available && Daemon.appExclusionsSupported
+                        onToggled: (checked) => Daemon.setKeepDnsInVpn(checked)
+                    }
+                    SettingRow {
                         title: qsTr("Notify when the connection drops")
                         hint: qsTr("A desktop notification when the VPN is lost and when it is back.")
                         checked: Notifier.enabled

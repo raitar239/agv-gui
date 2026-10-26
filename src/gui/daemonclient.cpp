@@ -432,6 +432,11 @@ void DaemonClient::setKillSwitchAllowLan(bool enabled)
     call(QStringLiteral("SetKillSwitchAllowLan"), {enabled});
 }
 
+void DaemonClient::setKeepDnsInVpn(bool enabled)
+{
+    call(QStringLiteral("SetKeepDnsInVpn"), {enabled});
+}
+
 void DaemonClient::refreshTunnelTraffic()
 {
     const QString device = m_props.value(QStringLiteral("TunDevice")).toString();

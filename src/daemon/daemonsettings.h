@@ -19,6 +19,9 @@ public:
     bool killSwitch() const { return m_values.value(QStringLiteral("kill_switch")).toBool(); }
     void setKillSwitch(bool on) { m_values.insert(QStringLiteral("kill_switch"), on); }
     // Printers, NAS and the router stay reachable while the kill switch blocks the internet.
+    // Redirect plain DNS into the tunnel while connected (DnsGuard). On unless turned off.
+    bool keepDnsInVpn() const { return m_values.value(QStringLiteral("keep_dns_in_vpn"), true).toBool(); }
+    void setKeepDnsInVpn(bool on) { m_values.insert(QStringLiteral("keep_dns_in_vpn"), on); }
     bool killSwitchAllowLan() const { return m_values.value(QStringLiteral("kill_switch_allow_lan"), true).toBool(); }
     void setKillSwitchAllowLan(bool on) { m_values.insert(QStringLiteral("kill_switch_allow_lan"), on); }
 

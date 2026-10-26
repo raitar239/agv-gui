@@ -15,6 +15,7 @@ class PolkitAuthorizer;
 class RoutingEngine;
 class AppExclusionService;
 class DaemonSettings;
+class DnsGuard;
 class KillSwitch;
 class StatsRecorder;
 class SystemdUnit;
@@ -41,6 +42,7 @@ class DaemonService : public QObject, protected QDBusContext
     Q_PROPERTY(bool KillSwitch READ killSwitch)
     Q_PROPERTY(bool KillSwitchAllowLan READ killSwitchAllowLan)
     Q_PROPERTY(bool KillSwitchActive READ killSwitchActive)
+    Q_PROPERTY(bool KeepDnsInVpn READ keepDnsInVpn)
     Q_PROPERTY(bool Reconnecting READ reconnecting)
 
 public:
@@ -62,6 +64,7 @@ public:
     bool killSwitch() const;
     bool killSwitchAllowLan() const;
     bool killSwitchActive() const;
+    bool keepDnsInVpn() const;
     bool reconnecting() const;
 
     // Optional: without them the startup properties read false and setting them fails.
@@ -69,7 +72,7 @@ public:
     // Optional: without it GetStatistics answers an empty object.
     void setStatistics(StatsRecorder *stats) { m_stats = stats; }
     // Optional: needs setStartup() too, where its setting lives. engine gives the cgroups.
-    void setKillSwitch(KillSwitch *killSwitch, RoutingEngine *engine);
+    void setProtection(KillSwitch *killSwitch, DnsGuard *dnsGuard, RoutingEngine *engine);
 
 public slots:
     void Connect(const QString &location);
@@ -101,6 +104,7 @@ public slots:
     void SetAutoConnect(bool enabled);
     void SetKillSwitch(bool enabled);
     void SetKillSwitchAllowLan(bool enabled);
+    void SetKeepDnsInVpn(bool enabled);
 
     QString GetStatistics();
     void ResetStatistics();
@@ -121,8 +125,8 @@ private:
     void replyDone(const QDBusMessage &message, const Error &error);
     void replyError(const QDBusMessage &message, const Error &error);
     void emitPropertiesChanged(const QStringList &names);
-    // Engages or releases the kill switch to match the setting and the VPN's state.
-    void syncKillSwitch();
+    // Engages or releases the kill switch and the DNS guard to match the settings and the VPN.
+    void syncProtection();
     void setSetting(const QDBusMessage &message, const QString &property, const std::function<void()> &change);
 
     VpnService *m_vpn;
@@ -131,6 +135,7 @@ private:
     SystemdUnit *m_unit = nullptr;
     StatsRecorder *m_stats = nullptr;
     KillSwitch *m_killSwitch = nullptr;
+    DnsGuard *m_dnsGuard = nullptr;
     RoutingEngine *m_engine = nullptr;
     PolkitAuthorizer *m_polkit;
     QDBusConnection m_bus;

@@ -184,6 +184,12 @@
     <method name="SetKillSwitchAllowLan">
       <arg name="enabled" type="b" direction="in"/>
     </method>
+    <!-- While connected in TUN mode, send every program's plain DNS (port 53) through the tunnel,
+         even where the system resolver points at the router -->
+    <property name="KeepDnsInVpn" type="b" access="read"/>
+    <method name="SetKeepDnsInVpn">
+      <arg name="enabled" type="b" direction="in"/>
+    </method>
     <!-- The VPN is down and the kill switch is holding traffic back right now -->
     <property name="KillSwitchActive" type="b" access="read"/>
     <!-- The VPN dropped and agvd is connecting again; Disconnect stops it -->

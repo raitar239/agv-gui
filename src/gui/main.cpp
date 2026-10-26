@@ -3,6 +3,7 @@
 #include "installedapps.h"
 #include "language.h"
 #include "locationmodel.h"
+#include "leakcheck.h"
 #include "notifier.h"
 #include "systemtheme.h"
 #include "trayicon.h"
@@ -110,6 +111,8 @@ int main(int argc, char *argv[])
     registerShared("Autostart", &autostart);
     registerShared("Language", &language);
     registerShared("Notifier", &notifier);
+    LeakCheck leakCheck;
+    registerShared("LeakCheck", &leakCheck);
     qmlRegisterType<InstalledApps>("Agv.Backend", 1, 0, "InstalledApps");
 
     const bool tray = !screenshot && TrayIcon::isAvailable();

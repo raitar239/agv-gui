@@ -26,6 +26,19 @@ Item {
     // "Country, City", or just the city until the list is known.
     readonly property string currentPlace: currentCountry !== "" ? currentCountry + ", " + currentCityName : currentCityName
 
+    // Development hook for --screenshot (AGV_SCREENSHOT_STATE=leak runs the leak check).
+    readonly property string shotState: Window.window ? Window.window.screenshotState : ""
+    onShotStateChanged: if (shotState === "leak") LeakCheck.start()
+
+    // A check from another connection (or none) would only mislead.
+    Connections {
+        target: Daemon
+        function onStatusChanged() {
+            if (!Daemon.connected || Daemon.reconnecting)
+                LeakCheck.clear()
+        }
+    }
+
     function prettyCity(name) {
         // The CLI reports "ATHENS"; show "Athens".
         return name.toLowerCase().replace(/(^|[\s-])\S/g, function (s) { return s.toUpperCase() })
@@ -142,6 +155,107 @@ Item {
                         triggeredOnStart: true
                         running: Daemon.connected && page.visible
                         onTriggered: Daemon.refreshTunnelTraffic()
+                    }
+                }
+                FlatButton {
+                    visible: Daemon.connected && !page.working && !LeakCheck.running
+                             && LeakCheck.result.verdict === undefined
+                    kind: "ghost"
+                    compact: true
+                    iconName: "search"
+                    text: qsTr("Check IP and DNS for leaks")
+                    onClicked: LeakCheck.start()
+                    Layout.alignment: Qt.AlignHCenter
+                }
+            }
+
+            // What the internet sees, on request.
+            Card {
+                id: leakCard
+                readonly property var result: LeakCheck.result
+                readonly property string verdict: result.verdict || ""
+                visible: LeakCheck.running || verdict !== ""
+                Layout.fillWidth: true
+                ColumnLayout {
+                    width: parent.width
+                    spacing: 8
+                    RowLayout {
+                        spacing: 10
+                        Layout.fillWidth: true
+                        AppIcon {
+                            name: leakCard.verdict === "ok" ? "check" : leakCard.verdict === "" ? "search" : "warning"
+                            color: leakCard.verdict === "ok" ? Theme.accent
+                                 : leakCard.verdict === "" ? Theme.textSecondary : Theme.warning
+                        }
+                        Text {
+                            text: LeakCheck.running ? qsTr("Checking…")
+                                : leakCard.verdict === "ok" ? qsTr("No leaks found")
+                                : leakCard.verdict === "leak" ? qsTr("DNS leak")
+                                : qsTr("Could not check")
+                            color: Theme.text
+                            font.pixelSize: Theme.fontBody
+                            font.weight: Font.DemiBold
+                            Layout.fillWidth: true
+                        }
+                        FlatButton {
+                            visible: !LeakCheck.running
+                            kind: "subtle"
+                            compact: true
+                            iconName: "refresh"
+                            onClicked: LeakCheck.start()
+                        }
+                        FlatButton {
+                            visible: !LeakCheck.running
+                            kind: "subtle"
+                            compact: true
+                            iconName: "close"
+                            onClicked: LeakCheck.clear()
+                        }
+                    }
+                    Text {
+                        visible: leakCard.verdict === "error"
+                        text: leakCard.result.error || ""
+                        color: Theme.textSecondary
+                        font.pixelSize: Theme.fontSmall
+                        wrapMode: Text.Wrap
+                        Layout.fillWidth: true
+                    }
+                    Text {
+                        visible: leakCard.verdict === "ok" || leakCard.verdict === "leak"
+                        text: qsTr("IP address: %1").arg(leakCard.result.ip || "")
+                              + "\n" + "%1 · %2".arg(leakCard.result.country || "").arg(leakCard.result.org || "")
+                        color: Theme.textSecondary
+                        font.pixelSize: Theme.fontSmall
+                        wrapMode: Text.Wrap
+                        Layout.fillWidth: true
+                    }
+                    Text {
+                        readonly property var servers: leakCard.result.dns || []
+                        readonly property var providers: {
+                            const seen = []
+                            for (const server of servers) {
+                                const name = "%1 (%2)".arg(server.org).arg(server.country)
+                                if (seen.indexOf(name) < 0)
+                                    seen.push(name)
+                            }
+                            return seen
+                        }
+                        visible: servers.length > 0
+                        text: qsTr("DNS: %1").arg(providers.join(", "))
+                        color: leakCard.verdict === "leak" ? Theme.warning : Theme.textSecondary
+                        font.pixelSize: Theme.fontSmall
+                        wrapMode: Text.Wrap
+                        Layout.fillWidth: true
+                    }
+                    Text {
+                        visible: leakCard.verdict === "leak"
+                        text: Daemon.keepDnsInVpn
+                              ? qsTr("These servers see the sites you open. Reconnect the VPN and check again; if it stays, the DNS may be set inside an app or the browser.")
+                              : qsTr("These servers see the sites you open. Turn on \"Keep DNS inside the VPN\" in Settings.")
+                        color: Theme.textSecondary
+                        font.pixelSize: Theme.fontSmall
+                        wrapMode: Text.Wrap
+                        Layout.fillWidth: true
                     }
                 }
             }

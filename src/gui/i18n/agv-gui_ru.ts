@@ -259,113 +259,113 @@
 <context>
     <name>HomePage</name>
     <message>
-        <location filename="../qml/HomePage.qml" line="51"/>
+        <location filename="../qml/HomePage.qml" line="64"/>
         <source>The agvd service is not running</source>
         <translation>Служба agvd не запущена</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="52"/>
+        <location filename="../qml/HomePage.qml" line="65"/>
         <source>Start it with: sudo systemctl start agvd</source>
         <translation>Запустите её: sudo systemctl start agvd</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="57"/>
+        <location filename="../qml/HomePage.qml" line="70"/>
         <source>AdGuard VPN is already running outside this app</source>
         <translation>AdGuard VPN уже запущен вне этого приложения</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="58"/>
+        <location filename="../qml/HomePage.qml" line="71"/>
         <source>Take it over to control it from here and use app exclusions.</source>
         <translation>Перехватите его, чтобы управлять отсюда и исключать приложения.</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="59"/>
+        <location filename="../qml/HomePage.qml" line="72"/>
         <source>Take over</source>
         <translation>Перехватить</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="66"/>
+        <location filename="../qml/HomePage.qml" line="79"/>
         <source>The internet is blocked by the kill switch</source>
         <translation>Интернет заблокирован kill switch</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="67"/>
+        <location filename="../qml/HomePage.qml" line="80"/>
         <source>The VPN dropped and is reconnecting. Turn it off to unblock the internet.</source>
         <translation>VPN отключился и переподключается. Выключите VPN, чтобы снять блокировку.</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="68"/>
+        <location filename="../qml/HomePage.qml" line="81"/>
         <source>The VPN is not connected. Turn it off to unblock the internet.</source>
         <translation>VPN не подключён. Выключите VPN, чтобы снять блокировку.</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="69"/>
+        <location filename="../qml/HomePage.qml" line="82"/>
         <source>Turn off VPN</source>
         <translation>Выключить VPN</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="76"/>
+        <location filename="../qml/HomePage.qml" line="89"/>
         <source>Sign in to AdGuard VPN</source>
         <translation>Войдите в AdGuard VPN</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="77"/>
+        <location filename="../qml/HomePage.qml" line="90"/>
         <source>Waiting for confirmation in your browser…</source>
         <translation>Ждём подтверждения в браузере…</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="78"/>
+        <location filename="../qml/HomePage.qml" line="91"/>
         <source>Use your AdGuard account, or the one adguardvpn-cli already uses.</source>
         <translation>Через аккаунт AdGuard или тот, что уже использует adguardvpn-cli.</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="79"/>
+        <location filename="../qml/HomePage.qml" line="92"/>
         <source>Sign in</source>
         <translation>Войти</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="99"/>
+        <location filename="../qml/HomePage.qml" line="112"/>
         <source>Reconnecting…</source>
         <translation>Переподключение…</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="100"/>
+        <location filename="../qml/HomePage.qml" line="113"/>
         <source>Disconnecting…</source>
         <translation>Отключение…</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="100"/>
+        <location filename="../qml/HomePage.qml" line="113"/>
         <source>Connecting…</source>
         <translation>Подключение…</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="101"/>
-        <location filename="../qml/HomePage.qml" line="188"/>
+        <location filename="../qml/HomePage.qml" line="114"/>
+        <location filename="../qml/HomePage.qml" line="302"/>
         <source>Connected</source>
         <translation>Подключено</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="101"/>
+        <location filename="../qml/HomePage.qml" line="114"/>
         <source>Protected</source>
         <translation>Защищено</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="102"/>
+        <location filename="../qml/HomePage.qml" line="115"/>
         <source>Not protected</source>
         <translation>Не защищено</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="112"/>
+        <location filename="../qml/HomePage.qml" line="125"/>
         <source>The connection dropped. Press the button to stop trying.</source>
         <translation>Соединение прервалось. Нажмите кнопку, чтобы прекратить попытки.</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="116"/>
+        <location filename="../qml/HomePage.qml" line="129"/>
         <source>SOCKS5 proxy %1 goes through %2</source>
         <translation>SOCKS5-прокси %1 идёт через %2</translation>
     </message>
     <message numerus="yes">
-        <location filename="../qml/HomePage.qml" line="118"/>
+        <location filename="../qml/HomePage.qml" line="131"/>
         <source>Only %n app(s) use %1</source>
         <translation>
             <numerusform>Только %n приложение использует %1</numerusform>
@@ -373,8 +373,53 @@
             <numerusform>Только %n приложений используют %1</numerusform>
         </translation>
     </message>
-    <message numerus="yes">
+    <message>
+        <location filename="../qml/HomePage.qml" line="166"/>
+        <source>Check IP and DNS for leaks</source>
+        <translation>Проверить IP и DNS на утечки</translation>
+    </message>
+    <message>
         <location filename="../qml/HomePage.qml" line="191"/>
+        <source>Checking…</source>
+        <translation>Проверка…</translation>
+    </message>
+    <message>
+        <location filename="../qml/HomePage.qml" line="192"/>
+        <source>No leaks found</source>
+        <translation>Утечек не найдено</translation>
+    </message>
+    <message>
+        <location filename="../qml/HomePage.qml" line="193"/>
+        <source>DNS leak</source>
+        <translation>Утечка DNS</translation>
+    </message>
+    <message>
+        <location filename="../qml/HomePage.qml" line="194"/>
+        <source>Could not check</source>
+        <translation>Не удалось проверить</translation>
+    </message>
+    <message>
+        <location filename="../qml/HomePage.qml" line="225"/>
+        <source>IP address: %1</source>
+        <translation>IP-адрес: %1</translation>
+    </message>
+    <message>
+        <location filename="../qml/HomePage.qml" line="244"/>
+        <source>DNS: %1</source>
+        <translation>DNS: %1</translation>
+    </message>
+    <message>
+        <location filename="../qml/HomePage.qml" line="253"/>
+        <source>These servers see the sites you open. Reconnect the VPN and check again; if it stays, the DNS may be set inside an app or the browser.</source>
+        <translation>Эти серверы видят сайты, которые вы открываете. Переподключите VPN и проверьте снова; если не поможет, DNS может быть задан в самом приложении или браузере.</translation>
+    </message>
+    <message>
+        <location filename="../qml/HomePage.qml" line="254"/>
+        <source>These servers see the sites you open. Turn on &quot;Keep DNS inside the VPN&quot; in Settings.</source>
+        <translation>Эти серверы видят сайты, которые вы открываете. Включите «Держать DNS внутри VPN» в настройках.</translation>
+    </message>
+    <message numerus="yes">
+        <location filename="../qml/HomePage.qml" line="305"/>
         <source>%n location(s)</source>
         <translation>
             <numerusform>%n локация</numerusform>
@@ -383,32 +428,32 @@
         </translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="120"/>
+        <location filename="../qml/HomePage.qml" line="133"/>
         <source>Your traffic goes through %1</source>
         <translation>Трафик идёт через %1</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="121"/>
+        <location filename="../qml/HomePage.qml" line="134"/>
         <source>Press the button to connect</source>
         <translation>Нажмите кнопку, чтобы подключиться</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="176"/>
+        <location filename="../qml/HomePage.qml" line="290"/>
         <source>Choose a location</source>
         <translation>Выберите локацию</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="188"/>
+        <location filename="../qml/HomePage.qml" line="302"/>
         <source>Ping %1 ms</source>
         <translation>Пинг %1 мс</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="192"/>
+        <location filename="../qml/HomePage.qml" line="306"/>
         <source>Pick a server</source>
         <translation>Выберите сервер</translation>
     </message>
     <message>
-        <location filename="../qml/HomePage.qml" line="202"/>
+        <location filename="../qml/HomePage.qml" line="316"/>
         <source>Fastest</source>
         <translation>Быстрейшая</translation>
     </message>
@@ -584,132 +629,142 @@
         <translation>Выйти</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="138"/>
+        <location filename="../qml/SettingsPage.qml" line="155"/>
+        <source>Keep DNS inside the VPN</source>
+        <translation>Держать DNS внутри VPN</translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingsPage.qml" line="156"/>
+        <source>Sends every program&apos;s DNS lookups through the VPN, even where the system asks the router, so your internet provider does not see the sites you open. Local names like router.lan do not resolve while connected.</source>
+        <translation>DNS-запросы всех программ идут через VPN, даже если система спрашивает роутер, — провайдер не видит, какие сайты вы открываете. Локальные имена вроде router.lan при подключении не работают.</translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingsPage.qml" line="181"/>
         <source>Theme</source>
         <translation>Тема</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="144"/>
+        <location filename="../qml/SettingsPage.qml" line="187"/>
         <source>System</source>
         <translation>Системная</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="145"/>
+        <location filename="../qml/SettingsPage.qml" line="188"/>
         <source>Light</source>
         <translation>Светлая</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="146"/>
+        <location filename="../qml/SettingsPage.qml" line="189"/>
         <source>Dark</source>
         <translation>Тёмная</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="156"/>
+        <location filename="../qml/SettingsPage.qml" line="199"/>
         <source>Language</source>
         <translation>Язык</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="178"/>
+        <location filename="../qml/SettingsPage.qml" line="221"/>
         <source>Startup</source>
         <translation>Запуск</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="184"/>
+        <location filename="../qml/SettingsPage.qml" line="227"/>
         <source>Open AGV in the tray when I log in</source>
         <translation>Открывать AGV в трее при входе в систему</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="195"/>
+        <location filename="../qml/SettingsPage.qml" line="238"/>
         <source>Hyprland: add this line to hyprland.conf. Click to copy.</source>
         <translation>Hyprland: добавьте эту строку в hyprland.conf. Нажмите, чтобы скопировать.</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="221"/>
+        <location filename="../qml/SettingsPage.qml" line="264"/>
         <source>Copy</source>
         <translation>Копировать</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="240"/>
+        <location filename="../qml/SettingsPage.qml" line="283"/>
         <source>Start the VPN service at boot</source>
         <translation>Запускать службу VPN при загрузке</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="241"/>
+        <location filename="../qml/SettingsPage.qml" line="284"/>
         <source>Needs an administrator password.</source>
         <translation>Нужен пароль администратора.</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="247"/>
+        <location filename="../qml/SettingsPage.qml" line="290"/>
         <source>Connect automatically</source>
         <translation>Подключаться автоматически</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="248"/>
+        <location filename="../qml/SettingsPage.qml" line="291"/>
         <source>When the service starts, connect to the last location and keep trying until the network is up.</source>
         <translation>При запуске службы подключаться к последней локации и повторять попытки, пока не появится сеть.</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="263"/>
+        <location filename="../qml/SettingsPage.qml" line="134"/>
         <source>Protection</source>
         <translation>Защита</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="269"/>
+        <location filename="../qml/SettingsPage.qml" line="140"/>
         <source>Kill switch</source>
         <translation>Kill switch</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="270"/>
+        <location filename="../qml/SettingsPage.qml" line="141"/>
         <source>If the VPN drops, block the internet until it reconnects, so nothing leaves without it. Apps excluded from the VPN keep working. Turning the VPN off yourself unblocks it.</source>
         <translation>Если VPN оборвётся, интернет блокируется до переподключения — ничего не уйдёт в обход VPN. Исключённые приложения продолжают работать. Если выключить VPN самому, блокировка снимается.</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="277"/>
+        <location filename="../qml/SettingsPage.qml" line="148"/>
         <source>Allow the local network</source>
         <translation>Разрешить локальную сеть</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="278"/>
+        <location filename="../qml/SettingsPage.qml" line="149"/>
         <source>Printers, file shares and the router stay reachable while the internet is blocked.</source>
         <translation>Принтеры, общие папки и роутер остаются доступны, пока интернет заблокирован.</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="284"/>
+        <location filename="../qml/SettingsPage.qml" line="162"/>
         <source>Notify when the connection drops</source>
         <translation>Уведомлять об обрыве соединения</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="285"/>
+        <location filename="../qml/SettingsPage.qml" line="163"/>
         <source>A desktop notification when the VPN is lost and when it is back.</source>
         <translation>Уведомление на рабочем столе, когда VPN пропал и когда вернулся.</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="307"/>
+        <location filename="../qml/SettingsPage.qml" line="314"/>
         <source>agvd service is running</source>
         <translation>Служба agvd работает</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="307"/>
+        <location filename="../qml/SettingsPage.qml" line="314"/>
         <source>agvd service is not running</source>
         <translation>Служба agvd не запущена</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="313"/>
+        <location filename="../qml/SettingsPage.qml" line="320"/>
         <source>App exclusions: %1</source>
         <translation>Исключения приложений: %1</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="313"/>
+        <location filename="../qml/SettingsPage.qml" line="320"/>
         <source>available</source>
         <translation>доступны</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="313"/>
+        <location filename="../qml/SettingsPage.qml" line="320"/>
         <source>not available</source>
         <translation>недоступны</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="318"/>
+        <location filename="../qml/SettingsPage.qml" line="325"/>
         <source>agv-gui %1</source>
         <translation>agv-gui %1</translation>
     </message>
@@ -1109,57 +1164,57 @@
         <translation>Сохранено. Применится при следующем подключении.</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="541"/>
+        <location filename="../daemonclient.cpp" line="546"/>
         <source>Signed in with your adguardvpn-cli account</source>
         <translation>Вход выполнен через аккаунт из adguardvpn-cli</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="557"/>
+        <location filename="../daemonclient.cpp" line="562"/>
         <source>The login link from AdGuard VPN looks wrong: %1</source>
         <translation>Ссылка для входа от AdGuard VPN выглядит подозрительно: %1</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="561"/>
+        <location filename="../daemonclient.cpp" line="566"/>
         <source>Open this link to sign in: %1</source>
         <translation>Откройте ссылку, чтобы войти: %1</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="563"/>
+        <location filename="../daemonclient.cpp" line="568"/>
         <source>Confirm the sign-in in your browser</source>
         <translation>Подтвердите вход в браузере</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="571"/>
+        <location filename="../daemonclient.cpp" line="576"/>
         <source>Signed in</source>
         <translation>Вход выполнен</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="574"/>
+        <location filename="../daemonclient.cpp" line="579"/>
         <source>Sign-in failed: %1</source>
         <translation>Не удалось войти: %1</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="684"/>
+        <location filename="../daemonclient.cpp" line="689"/>
         <source>Sign in to AdGuard VPN first</source>
         <translation>Сначала войдите в AdGuard VPN</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="687"/>
+        <location filename="../daemonclient.cpp" line="692"/>
         <source>Not allowed: %1</source>
         <translation>Нет доступа: %1</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="689"/>
+        <location filename="../daemonclient.cpp" line="694"/>
         <source>This needs an administrator password</source>
         <translation>Нужен пароль администратора</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="692"/>
+        <location filename="../daemonclient.cpp" line="697"/>
         <source>The agvd service is not running</source>
         <translation>Служба agvd не запущена</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="695"/>
+        <location filename="../daemonclient.cpp" line="700"/>
         <source>The agvd service did not answer in time</source>
         <translation>Служба agvd не ответила вовремя</translation>
     </message>
@@ -1170,6 +1225,24 @@
         <location filename="../language.cpp" line="41"/>
         <source>System</source>
         <translation>Системный</translation>
+    </message>
+</context>
+<context>
+    <name>agv::LeakCheck</name>
+    <message>
+        <location filename="../leakcheck.cpp" line="53"/>
+        <source>The check service is not reachable: %1</source>
+        <translation>Сервис проверки недоступен: %1</translation>
+    </message>
+    <message>
+        <location filename="../leakcheck.cpp" line="88"/>
+        <source>The check service did not answer: %1</source>
+        <translation>Сервис проверки не ответил: %1</translation>
+    </message>
+    <message>
+        <location filename="../leakcheck.cpp" line="110"/>
+        <source>The check did not see this computer&apos;s traffic. Try again.</source>
+        <translation>Проверка не увидела трафик этого компьютера. Попробуйте ещё раз.</translation>
     </message>
 </context>
 <context>

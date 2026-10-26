@@ -1,5 +1,6 @@
 #include "appexclusionservice.h"
 #include "appstore.h"
+#include "dnsguard.h"
 #include "killswitch.h"
 #include "routingengine.h"
 
@@ -424,6 +425,26 @@ private slots:
         QVERIFY(!killSwitch.engage(options));
         QVERIFY(!killSwitch.isEngaged());
         QVERIFY(killSwitch.lastError().contains(QStringLiteral("boom")));
+    }
+
+    void dnsGuard()
+    {
+        DnsGuard::Options options;
+        options.tunDevice = QStringLiteral("tun0");
+        options.ownCgroup = QStringLiteral("system.slice/agvd.service");
+        const QString script = QString::fromUtf8(DnsGuard::buildRuleset(options));
+        // Excluded apps and agvd with the CLI keep their own DNS; loopback resolvers too.
+        QVERIFY(script.indexOf(QStringLiteral("meta mark 0x61677664 return")) < script.indexOf(QStringLiteral("dnat")));
+        QVERIFY(script.contains(QStringLiteral("socket cgroupv2 level 2 \"system.slice/agvd.service\" return")));
+        QVERIFY(script.contains(QStringLiteral("ip daddr { 127.0.0.0/8, 94.140.14.14 } return")));
+        QVERIFY(script.contains(QStringLiteral("th dport 53 counter dnat ip to 94.140.14.14")));
+        QVERIFY(script.contains(QStringLiteral("oifname \"tun0\" meta l4proto { tcp, udp } th dport 53 masquerade")));
+
+        FakeCommands commands;
+        DnsGuard guard(&commands);
+        QVERIFY(guard.engage(options));
+        guard.release();
+        QCOMPARE(commands.commands().last(), QStringLiteral("nft delete table inet agvd-dns"));
     }
 
     void storePerMode()

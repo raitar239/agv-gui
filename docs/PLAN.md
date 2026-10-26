@@ -317,6 +317,14 @@ cgroup v2 → nftables `socket cgroupv2` → `meta mark` → `ip rule fwmark` �
    тоже (контейнеры/ВМ). VPN-only: reject только помеченного трафика мимо tun. Снимается при остановке
    agvd и `agvd --cleanup`; после падения агента таблица остаётся до перезапуска (без утечки).
    D-Bus `KillSwitch`/`KillSwitchAllowLan`/`KillSwitchActive`/`Reconnecting`.
+   ✓ Утечки DNS: CLI меняет системный DNS только через systemd-resolved/resolvconf; с NetworkManager,
+   пишущим resolv.conf сам (nameserver = роутер), запросы шли мимо туннеля к провайдеру (найдено
+   проверкой на системе автора: VPN — Греция, DNS — Ростелеком). `DnsGuard` (настройка
+   `keep_dns_in_vpn`, по умолчанию вкл.): таблица `inet agvd-dns`, пока подключено в TUN — DNAT порта 53
+   всех, кроме исключённых приложений и cgroup agvd, на 94.140.14.14 / 2a10:50c0::ad1:ff (маршрут через
+   tun, там отвечает CLI) + masquerade на tun; loopback-резолверы не трогаются.
+   ✓ Проверка утечек по кнопке на главной (bash.ws: id → 6 резолвов через системный резолвер → отчёт):
+   внешний IP, DNS-серверы; утечка — если DNS не AdGuard и не в той же сети/стране, что выход VPN.
    ✓ Уведомления (GUI, org.freedesktop.Notifications): обрыв, переподключение, блокировка kill switch;
    ручные действия молчат; выключаются в настройках.
 7. Упаковка и тесты: Arch, Fedora, Ubuntu, Debian; Hyprland, KDE, GNOME.

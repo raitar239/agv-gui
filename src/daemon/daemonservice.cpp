@@ -2,6 +2,7 @@
 
 #include "appexclusionservice.h"
 #include "daemonsettings.h"
+#include "dnsguard.h"
 #include "killswitch.h"
 #include "systemdunit.h"
 #include "polkitauthorizer.h"
@@ -38,7 +39,7 @@ DaemonService::DaemonService(VpnService *vpn, AppExclusionService *apps, PolkitA
     , m_bus(std::move(bus))
 {
     connect(m_vpn, &VpnService::statusChanged, this, [this] {
-        syncKillSwitch();
+        syncProtection();
         emitPropertiesChanged(StatusProperties);
     });
     connect(m_vpn, &VpnService::siteExclusionsChanged, this, [this] {
@@ -46,7 +47,7 @@ DaemonService::DaemonService(VpnService *vpn, AppExclusionService *apps, PolkitA
         emit SiteExclusionsChanged();
     });
     connect(m_apps, &AppExclusionService::changed, this, [this] {
-        syncKillSwitch();
+        syncProtection();
         emitPropertiesChanged({QStringLiteral("AppExclusionMode")});
         emit AppExclusionsChanged();
     });
@@ -119,6 +120,13 @@ void DaemonService::SetKillSwitchAllowLan(bool enabled)
     });
 }
 
+void DaemonService::SetKeepDnsInVpn(bool enabled)
+{
+    authorized(ActionConfigure, [this, enabled](const QDBusMessage &message) {
+        setSetting(message, QStringLiteral("KeepDnsInVpn"), [this, enabled] { m_settings->setKeepDnsInVpn(enabled); });
+    });
+}
+
 void DaemonService::setSetting(const QDBusMessage &message, const QString &property,
                                const std::function<void()> &change)
 {
@@ -131,7 +139,7 @@ void DaemonService::setSetting(const QDBusMessage &message, const QString &prope
         replyError(message, {errors::SystemFailed, QStringLiteral("Cannot save settings")});
         return;
     }
-    syncKillSwitch();
+    syncProtection();
     emitPropertiesChanged({property, QStringLiteral("KillSwitchActive")});
     replyDone(message, {});
 }
@@ -139,25 +147,39 @@ void DaemonService::setSetting(const QDBusMessage &message, const QString &prope
 bool DaemonService::killSwitch() const { return m_killSwitch && m_settings && m_settings->killSwitch(); }
 bool DaemonService::killSwitchAllowLan() const { return !m_settings || m_settings->killSwitchAllowLan(); }
 bool DaemonService::reconnecting() const { return m_vpn->reconnecting(); }
+bool DaemonService::keepDnsInVpn() const { return m_dnsGuard && (!m_settings || m_settings->keepDnsInVpn()); }
 
 bool DaemonService::killSwitchActive() const
 {
     return m_killSwitch && m_killSwitch->isEngaged() && m_vpn->state() != VpnService::State::Connected;
 }
 
-void DaemonService::setKillSwitch(KillSwitch *killSwitch, RoutingEngine *engine)
+void DaemonService::setProtection(KillSwitch *killSwitch, DnsGuard *dnsGuard, RoutingEngine *engine)
 {
     m_killSwitch = killSwitch;
+    m_dnsGuard = dnsGuard;
     m_engine = engine;
-    syncKillSwitch();
+    syncProtection();
 }
 
-void DaemonService::syncKillSwitch()
+void DaemonService::syncProtection()
 {
-    if (!m_killSwitch)
+    if (!m_killSwitch || !m_dnsGuard)
         return;
     // SOCKS5 mode has no tunnel to keep traffic in: apps choose to use the proxy.
     const bool socks = m_vpn->lastMode().compare(QLatin1String("socks"), Qt::CaseInsensitive) == 0;
+
+    const bool connected = m_vpn->state() == VpnService::State::Connected && !m_vpn->tunDevice().isEmpty();
+    if (keepDnsInVpn() && connected && !socks) {
+        DnsGuard::Options options;
+        options.tunDevice = m_vpn->tunDevice();
+        options.ownCgroup = m_engine->ownCgroup();
+        if (!m_dnsGuard->engage(options))
+            qWarning("agvd: DNS guard: %s", qPrintable(m_dnsGuard->lastError()));
+    } else if (m_dnsGuard->isEngaged()) {
+        m_dnsGuard->release();
+    }
+
     if (!killSwitch() || !m_vpn->wanted() || socks) {
         if (m_killSwitch->isEngaged())
             m_killSwitch->release();

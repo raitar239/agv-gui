@@ -5,6 +5,7 @@
 #include "daemonservice.h"
 #include "daemonsettings.h"
 #include "execwatcher.h"
+#include "dnsguard.h"
 #include "killswitch.h"
 #include "dbustypes.h"
 #include "polkitauthorizer.h"
@@ -103,6 +104,7 @@ int main(int argc, char *argv[])
         routing.init();
         routing.teardown();
         KillSwitch(&commands).release();
+        DnsGuard(&commands).release();
         return 0;
     }
 
@@ -220,12 +222,15 @@ int main(int argc, char *argv[])
     // A table left by a crashed agvd goes; it comes back below if the VPN is still meant to be up.
     KillSwitch killSwitch(&commands);
     killSwitch.release();
+    DnsGuard dnsGuard(&commands);
+    dnsGuard.release();
     if (apps.isSupported())
-        service.setKillSwitch(&killSwitch, &routing);
+        service.setProtection(&killSwitch, &dnsGuard, &routing);
 
     vpn.start();
     const int code = app.exec();
     // Stopping agvd must never leave the computer cut off.
     killSwitch.release();
+    dnsGuard.release();
     return code;
 }
