@@ -55,6 +55,8 @@ public:
     static constexpr int RulePriority = 30700;   // before AdGuard's 30800/30801
     static inline const QString TableName = QStringLiteral("agvd");
     static inline const QString BuiltinRunId = QStringLiteral("run"); // plain "agv-run cmd"
+    // traffic() key for agvd itself with adguardvpn-cli: in SOCKS5 mode that is the VPN's traffic.
+    static inline const QString DaemonTrafficId = QStringLiteral("agvd");
 
     // Bypass: the listed apps skip the VPN. VpnOnly: only the listed apps use it, everything else
     // goes straight out. Same marks and cgroups; only the ip rule's selector flips.

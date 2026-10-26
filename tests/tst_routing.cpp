@@ -129,6 +129,10 @@ private slots:
         QVERIFY(ruleset.contains(QLatin1String("ct mark 0x61677664 meta mark set ct mark")));
         QVERIFY(ruleset.contains(QLatin1String("meta mark 0x61677664 oifname != \"lo\" masquerade")));
         QVERIFY(ruleset.contains(QLatin1String("oifname \"lo\" return")));
+        // agvd with the CLI is counted too, without the excluded apps below it.
+        QVERIFY(ruleset.contains(QLatin1String(
+            "socket cgroupv2 level 2 \"system.slice/agvd.service\" meta mark != 0x61677664 counter comment \"out:agvd\"")));
+        QVERIFY(ruleset.contains(QLatin1String("comment \"in:agvd\"")));
     }
 
     void rulesetLoadsIntoRealNftables()

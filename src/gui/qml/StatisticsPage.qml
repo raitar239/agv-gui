@@ -19,7 +19,24 @@ Item {
         Language.preference
         return Daemon.statisticsFor(period)
     }
-    readonly property bool liveTraffic: (Daemon.connected && Daemon.hasTunnel) || shotState === "stats-live"
+    // In SOCKS5 mode the speed comes from agvd's counters for the CLI (they need nftables).
+    // An app picked in the Apps card: the chart shows its traffic.
+    property string selectedApp
+    property string selectedAppName
+    readonly property var chartStats: {
+        if (selectedApp === "")
+            return stats
+        Daemon.statisticsRevision
+        Language.preference
+        return Daemon.statisticsFor(period, selectedApp)
+    }
+    function selectApp(id, name) {
+        selectedApp = selectedApp === id ? "" : id
+        selectedAppName = name
+    }
+
+    readonly property bool liveTraffic: (Daemon.connected && (Daemon.hasTunnel || Daemon.appExclusionsSupported))
+                                        || shotState === "stats-live"
 
     // Live speed from the tunnel counters, one point per second for the last minute.
     property var speedIn: []
@@ -89,7 +106,11 @@ Item {
         }
     }
     onVisibleChanged: if (!visible) resetSpeed()
-    onShotStateChanged: resetSpeed()
+    onShotStateChanged: {
+        resetSpeed()
+        if (shotState.startsWith("stats-app:"))
+            selectApp(shotState.slice(10), "Genshin Impact")
+    }
 
     Timer {
         interval: 1000
@@ -148,65 +169,82 @@ Item {
     }
 
     // Name, a bar for its share and the numbers on the right.
-    component ShareRow: ColumnLayout {
+    component ShareRow: Item {
         id: share
+        property bool selected: false
+        property bool clickable: false
+        signal clicked()
         property string title
         property string leading      // flag emoji
         property url iconSource
         property real fraction
         property string figure
         property string detail
-        spacing: 6
+        implicitHeight: shareColumn.implicitHeight
         Layout.fillWidth: true
-        RowLayout {
-            spacing: 10
-            Layout.fillWidth: true
-            Text {
-                visible: share.leading !== ""
-                text: share.leading
-                font.pixelSize: 18
-            }
-            Image {
-                visible: share.iconSource.toString() !== ""
-                source: share.iconSource
-                sourceSize: Qt.size(22, 22)
-                Layout.preferredWidth: 22
-                Layout.preferredHeight: 22
-            }
-            Text {
-                text: share.title
-                color: Theme.text
-                font.pixelSize: Theme.fontBody
-                elide: Text.ElideRight
-                Layout.fillWidth: true
-            }
-            Text {
-                text: share.figure
-                color: Theme.text
-                font.pixelSize: Theme.fontSmall + 1
-                font.weight: Font.DemiBold
-            }
+
+        MouseArea {
+            anchors.fill: parent
+            anchors.margins: -4
+            enabled: share.clickable
+            cursorShape: share.clickable ? Qt.PointingHandCursor : Qt.ArrowCursor
+            onClicked: share.clicked()
         }
-        RowLayout {
-            spacing: 10
-            Layout.fillWidth: true
-            Rectangle {
-                height: 6
-                radius: 3
-                color: Theme.chartGrid
+        ColumnLayout {
+            id: shareColumn
+            width: parent.width
+            spacing: 6
+            RowLayout {
+                spacing: 10
                 Layout.fillWidth: true
-                Rectangle {
-                    width: Math.max(6, parent.width * share.fraction)
-                    height: parent.height
-                    radius: 3
-                    color: Theme.accent
-                    Behavior on width { NumberAnimation { duration: Theme.animNormal } }
+                Text {
+                    visible: share.leading !== ""
+                    text: share.leading
+                    font.pixelSize: 18
+                }
+                Image {
+                    visible: share.iconSource.toString() !== ""
+                    source: share.iconSource
+                    sourceSize: Qt.size(22, 22)
+                    Layout.preferredWidth: 22
+                    Layout.preferredHeight: 22
+                }
+                Text {
+                    text: share.title
+                    color: share.selected ? Theme.accent : Theme.text
+                    font.pixelSize: Theme.fontBody
+                    font.weight: share.selected ? Font.DemiBold : Font.Normal
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
+                }
+                Text {
+                    text: share.figure
+                    color: Theme.text
+                    font.pixelSize: Theme.fontSmall + 1
+                    font.weight: Font.DemiBold
                 }
             }
-            Text {
-                text: share.detail
-                color: Theme.textSecondary
-                font.pixelSize: Theme.fontSmall
+            RowLayout {
+                spacing: 10
+                Layout.fillWidth: true
+                Rectangle {
+                    height: 6
+                    radius: 3
+                    color: Theme.chartGrid
+                    Layout.fillWidth: true
+                    Rectangle {
+                        width: Math.max(6, parent.width * share.fraction)
+                        height: parent.height
+                        radius: 3
+                        color: share.selected ? Theme.accentHover : Theme.accent
+                        Behavior on width { NumberAnimation { duration: Theme.animNormal } }
+                    }
+                }
+                Text {
+                    text: share.detail
+                    color: Theme.textSecondary
+                    font.pixelSize: Theme.fontSmall
+                }
             }
         }
     }
@@ -335,7 +373,7 @@ Item {
                         Text {
                             visible: !page.liveTraffic
                             text: Daemon.connected
-                                  ? qsTr("Traffic is not counted in SOCKS5 mode: there is no tunnel to measure. Connected time still is.")
+                                  ? qsTr("Traffic is not measured here in SOCKS5 mode. Connected time still is.")
                                   : qsTr("Connect to see the speed and this session here.")
                             color: Theme.textSecondary
                             font.pixelSize: Theme.fontSmall
@@ -414,15 +452,25 @@ Item {
                         spacing: 16
                         Layout.fillWidth: true
                         SectionTitle {
-                            text: qsTr("Traffic through the VPN")
+                            text: page.selectedApp === "" ? qsTr("Traffic through the VPN")
+                                                          : qsTr("Traffic of %1").arg(page.selectedAppName)
+                            elide: Text.ElideRight
                             Layout.fillWidth: true
+                        }
+                        FlatButton {
+                            visible: page.selectedApp !== ""
+                            kind: "subtle"
+                            compact: true
+                            iconName: "close"
+                            text: qsTr("All traffic")
+                            onClicked: page.selectedApp = ""
                         }
                         Legend { swatch: Theme.chartIn; label: qsTr("Download") }
                         Legend { swatch: Theme.chartOut; label: qsTr("Upload") }
                     }
                     BarChart {
-                        bars: page.stats.chart
-                        maxValue: page.stats.chartMax
+                        bars: page.chartStats.chart
+                        maxValue: page.chartStats.chartMax
                         emptyText: qsTr("No traffic in this period yet")
                         Layout.fillWidth: true
                         Layout.preferredHeight: page.narrow ? 170 : 210
@@ -484,10 +532,21 @@ Item {
                                 readonly property real topBytes: page.stats.apps[0].in + page.stats.apps[0].out
                                 iconSource: "image://appicon/" + encodeURIComponent(modelData.icon || "")
                                 title: page.appName(modelData)
+                                selected: page.selectedApp === modelData.id
+                                clickable: true
+                                onClicked: page.selectApp(modelData.id, page.appName(modelData))
                                 fraction: topBytes > 0 ? bytes / topBytes : 0
                                 figure: Theme.formatBytes(bytes)
                                 detail: "↓ %1  ↑ %2".arg(Theme.formatBytes(modelData.in)).arg(Theme.formatBytes(modelData.out))
                             }
+                        }
+                        Text {
+                            visible: page.stats.apps.length > 1 && page.selectedApp === ""
+                            text: qsTr("Pick an app to see its traffic on the chart.")
+                            color: Theme.textDisabled
+                            font.pixelSize: Theme.fontSmall
+                            wrapMode: Text.Wrap
+                            Layout.fillWidth: true
                         }
                         Text {
                             visible: page.stats.apps.length === 0
@@ -589,6 +648,14 @@ Item {
                     font.pixelSize: Theme.fontSmall
                     wrapMode: Text.Wrap
                     Layout.fillWidth: true
+                }
+                FlatButton {
+                    kind: "subtle"
+                    compact: true
+                    iconName: "download"
+                    text: qsTr("Export CSV")
+                    enabled: page.stats.hasData
+                    onClicked: Daemon.exportStatistics()
                 }
                 FlatButton {
                     id: resetButton

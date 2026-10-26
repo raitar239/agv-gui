@@ -100,11 +100,27 @@ void StatsRecorder::record(const Sample &sample)
     if (elapsed < 0 || elapsed > MaxGapSeconds)
         elapsed = 0;
 
+    // Counters into deltas; an app seen for the first time only sets its baseline.
+    QHash<QString, Bytes> moved;
+    for (auto it = sample.apps.cbegin(); it != sample.apps.cend(); ++it) {
+        const auto last = m_lastApps.constFind(it.key());
+        if (last == m_lastApps.cend())
+            continue;
+        const Bytes bytes{delta(last->in, it->in), delta(last->out, it->out)};
+        if (bytes.in > 0 || bytes.out > 0)
+            moved.insert(it.key(), bytes);
+    }
+    m_lastApps = sample.apps;
+    const Bytes daemon = moved.take(QStringLiteral("agvd"));
+
     // Tunnel bytes since the last sample; a new tunnel starts counting from its first sample.
+    // SOCKS5 mode has no tunnel: there the VPN's traffic is the CLI's own.
     Bytes tunnel;
     if (sample.connected && sample.tunnel && m_lastTunnel && sample.tunDevice == m_lastTunDevice) {
         tunnel.in = delta(m_lastTunnel->in, sample.tunnel->in);
         tunnel.out = delta(m_lastTunnel->out, sample.tunnel->out);
+    } else if (sample.connected && !sample.tunnel && sample.tunDevice.isEmpty()) {
+        tunnel = daemon;
     }
     m_lastTunnel = sample.connected ? sample.tunnel : std::nullopt;
     m_lastTunDevice = sample.tunDevice;
@@ -121,29 +137,23 @@ void StatsRecorder::record(const Sample &sample)
         m_dirty = true;
     }
 
+    Hour &hour = m_hours[hourKey(now)];
     if (sample.connected && (elapsed > 0 || tunnel.in > 0 || tunnel.out > 0)) {
-        Totals &hour = m_hours[hourKey(now)];
         Totals &location = day.locations[sample.location];
-        for (Totals *totals : {&day.vpn, &hour, &location, &m_current->totals}) {
+        for (Totals *totals : {&day.vpn, &hour.vpn, &location, &m_current->totals}) {
             add(totals->bytes, tunnel);
             totals->seconds += elapsed;
         }
         m_dirty = true;
     }
 
-    for (auto it = sample.apps.cbegin(); it != sample.apps.cend(); ++it) {
-        const auto last = m_lastApps.constFind(it.key());
-        if (last == m_lastApps.cend())
-            continue;
-        const Bytes moved{delta(last->in, it->in), delta(last->out, it->out)};
-        if (moved.in == 0 && moved.out == 0)
-            continue;
-        add(day.apps[it.key()], moved);
+    for (auto it = moved.cbegin(); it != moved.cend(); ++it) {
+        add(day.apps[it.key()], *it);
+        add(hour.apps[it.key()], *it);
         if (sample.appInfo.contains(it.key()))
             m_appInfo.insert(it.key(), sample.appInfo.value(it.key()));
         m_dirty = true;
     }
-    m_lastApps = sample.apps;
     m_lastTime = now;
 
     const qint64 oldestHour = hourKey(now) - (KeepHours - 1) * 3600;
@@ -224,8 +234,17 @@ QJsonObject StatsRecorder::toJson(qint64 callerUid, bool forFile) const
     }
 
     QJsonObject hours;
-    for (auto it = m_hours.cbegin(); it != m_hours.cend(); ++it)
-        hours.insert(QString::number(it.key()), totalsJson(*it));
+    for (auto it = m_hours.cbegin(); it != m_hours.cend(); ++it) {
+        QJsonObject hour = totalsJson(it->vpn);
+        QJsonObject apps;
+        for (auto app = it->apps.cbegin(); app != it->apps.cend(); ++app) {
+            if (visible(app.key()))
+                apps.insert(app.key(), bytesJson(*app));
+        }
+        if (!apps.isEmpty())
+            hour.insert(QStringLiteral("apps"), apps);
+        hours.insert(QString::number(it.key()), hour);
+    }
 
     QJsonArray sessions;
     for (const Session &session : m_sessions)
@@ -282,8 +301,13 @@ QString StatsRecorder::load()
         m_days.insert(it.key(), day);
     }
     const QJsonObject hours = root.value(QStringLiteral("hours")).toObject();
-    for (auto it = hours.constBegin(); it != hours.constEnd(); ++it)
-        m_hours.insert(it.key().toLongLong(), totalsFrom(it->toObject()));
+    for (auto it = hours.constBegin(); it != hours.constEnd(); ++it) {
+        Hour hour{totalsFrom(it->toObject()), {}};
+        const QJsonObject apps = it->toObject().value(QStringLiteral("apps")).toObject();
+        for (auto app = apps.constBegin(); app != apps.constEnd(); ++app)
+            hour.apps.insert(app.key(), bytesFrom(app->toObject()));
+        m_hours.insert(it.key().toLongLong(), hour);
+    }
     for (const QJsonValue &value : root.value(QStringLiteral("sessions")).toArray()) {
         const QJsonObject object = value.toObject();
         m_sessions.append({fromEpoch(object.value(QStringLiteral("start"))),

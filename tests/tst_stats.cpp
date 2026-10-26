@@ -124,6 +124,29 @@ private slots:
         QCOMPARE(today(stats.report(0)).value(QStringLiteral("apps")).toObject().size(), 2);
     }
 
+    void socksCountsTheCli()
+    {
+        QTemporaryDir dir;
+        StatsRecorder stats(dir.path() + QStringLiteral("/stats.json"));
+        auto sample = connectedAt(0, 0, 0);
+        sample.tunnel.reset();
+        sample.tunDevice.clear();
+        sample.apps = {{QStringLiteral("agvd"), {1000, 100}}, {QStringLiteral("app-00000001"), {0, 0}}};
+        stats.record(sample);
+        sample.time = Start.addSecs(5);
+        sample.apps = {{QStringLiteral("agvd"), {5000, 300}}, {QStringLiteral("app-00000001"), {70, 7}}};
+        stats.record(sample);
+
+        const QJsonObject report = stats.report(-1);
+        const QJsonObject day = today(report);
+        QCOMPARE(number(day, "in"), 4000.0);
+        QCOMPARE(number(day, "out"), 200.0);
+        // agvd itself is not an app; real apps are kept per hour too.
+        QCOMPARE(day.value(QStringLiteral("apps")).toObject().keys(), QStringList{QStringLiteral("app-00000001")});
+        const QJsonObject hour = report.value(QStringLiteral("hours")).toObject().constBegin()->toObject();
+        QCOMPARE(number(hour.value(QStringLiteral("apps")).toObject().value(QStringLiteral("app-00000001")).toObject(), "in"), 70.0);
+    }
+
     void savesAndLoads()
     {
         QTemporaryDir dir;

@@ -12,6 +12,9 @@
 #include <QDBusServiceWatcher>
 #include <QDesktopServices>
 #include <QFile>
+#include <QStandardPaths>
+#include <QSaveFile>
+#include <QDir>
 #include <QJsonDocument>
 #include <QRegularExpression>
 #include <QSet>
@@ -476,6 +479,19 @@ void DaemonClient::setKeepDnsInVpn(bool enabled)
 void DaemonClient::refreshTunnelTraffic()
 {
     const QString device = m_props.value(QStringLiteral("TunDevice")).toString();
+    // SOCKS5 mode has no tunnel: the VPN's traffic is what agvd counts for itself and the CLI.
+    if (connected() && device.isEmpty() && appExclusionsSupported()) {
+        call(QStringLiteral("GetAppTraffic"), {}, [this](const QDBusMessage &reply) {
+            for (const AgvAppTraffic &entry : qdbus_cast<AgvAppTrafficList>(reply.arguments().value(0))) {
+                if (entry.id == QLatin1String("agvd")) {
+                    m_tunnelIn = double(entry.bytesIn);
+                    m_tunnelOut = double(entry.bytesOut);
+                }
+            }
+            emit tunnelTrafficChanged();
+        });
+        return;
+    }
     // Interface names never contain '/', but this path is built from D-Bus data.
     if (!connected() || device.isEmpty() || device.contains(QLatin1Char('/'))) {
         if (m_tunnelIn != 0 || m_tunnelOut != 0) {
@@ -488,13 +504,10 @@ void DaemonClient::refreshTunnelTraffic()
         QFile file(QStringLiteral("/sys/class/net/%1/statistics/%2").arg(device, QLatin1String(counter)));
         return file.open(QIODevice::ReadOnly) ? file.readAll().trimmed().toDouble() : 0.0;
     };
-    const double in = read("rx_bytes");
-    const double out = read("tx_bytes");
-    if (in != m_tunnelIn || out != m_tunnelOut) {
-        m_tunnelIn = in;
-        m_tunnelOut = out;
-        emit tunnelTrafficChanged();
-    }
+    // Emitted on every read, so a speed chart also sees the seconds without traffic.
+    m_tunnelIn = read("rx_bytes");
+    m_tunnelOut = read("tx_bytes");
+    emit tunnelTrafficChanged();
 }
 
 void DaemonClient::onAppExclusionsChanged()
@@ -550,9 +563,24 @@ void DaemonClient::resetStatistics()
     call(QStringLiteral("ResetStatistics"), {}, [this](const QDBusMessage &) { refreshStatistics(); });
 }
 
-QVariantMap DaemonClient::statisticsFor(const QString &period) const
+QVariantMap DaemonClient::statisticsFor(const QString &period, const QString &appId) const
 {
-    return stats::summarize(m_statistics, period, QDateTime::currentDateTime());
+    return stats::summarize(m_statistics, period, QDateTime::currentDateTime(), appId);
+}
+
+void DaemonClient::exportStatistics()
+{
+    QString folder = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+    if (folder.isEmpty() || !QDir(folder).exists())
+        folder = QDir::homePath();
+    const QString path = QStringLiteral("%1/agv-statistics-%2.csv")
+                             .arg(folder, QDate::currentDate().toString(Qt::ISODate));
+    QSaveFile file(path);
+    if (!file.open(QIODevice::WriteOnly) || file.write(stats::toCsv(m_statistics)) < 0 || !file.commit()) {
+        emit errorOccurred(tr("Cannot save %1").arg(path));
+        return;
+    }
+    emit info(tr("Saved to %1").arg(QDir::toNativeSeparators(path)));
 }
 
 void DaemonClient::login()

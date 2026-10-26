@@ -96,6 +96,25 @@ private slots:
         QCOMPARE(stats.value(QStringLiteral("sessions")).toList().size(), 3);
     }
 
+    void appChart()
+    {
+        const QVariantMap stats = stats::summarize(report(), QStringLiteral("week"), Now, QStringLiteral("app-00000001"));
+        const QVariantList chart = stats.value(QStringLiteral("chart")).toList();
+        QCOMPARE(chart.last().toMap().value(QStringLiteral("in")).toDouble(), 50.0);
+        QCOMPARE(stats.value(QStringLiteral("chartMax")).toDouble(), 55.0);
+    }
+
+    void csv()
+    {
+        const QString csv = QString::fromUtf8(stats::toCsv(report()));
+        const QStringList lines = csv.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+        QCOMPARE(lines.first(), QStringLiteral("date,type,name,download_bytes,upload_bytes,seconds,connections"));
+        QVERIFY(lines.contains(QStringLiteral("2026-10-24,vpn,,1000,100,3600,1")));
+        QVERIFY(lines.contains(QStringLiteral("2026-10-26,app,Game,50,5,0,")));
+        QVERIFY(lines.contains(QStringLiteral("2026-10-24,location,FRANKFURT,1000,100,3600,")));
+        QCOMPARE(csv.count(QStringLiteral(",session,")), 2);
+    }
+
     void empty()
     {
         const QVariantMap stats = stats::summarize({}, QStringLiteral("month"), Now);

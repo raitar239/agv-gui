@@ -186,7 +186,9 @@ public:
     Q_INVOKABLE void refreshStatistics();
     Q_INVOKABLE void resetStatistics();
     // Totals, chart, locations, apps and sessions for "today", "week", "month" or "all".
-    Q_INVOKABLE QVariantMap statisticsFor(const QString &period) const;
+    Q_INVOKABLE QVariantMap statisticsFor(const QString &period, const QString &appId = QString()) const;
+    // Saves everything as CSV in the Downloads folder; info() tells where.
+    Q_INVOKABLE void exportStatistics();
 
 signals:
     void availableChanged();

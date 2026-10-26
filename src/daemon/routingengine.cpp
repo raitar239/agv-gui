@@ -116,6 +116,14 @@ QByteArray RoutingEngine::buildRuleset(const QString &base, const QStringList &a
                    .arg(match, mark, id);
         in += QStringLiteral("\t\t%1 counter comment \"in:%2\"\n").arg(match, id);
     }
+    // The daemon's own cgroup (the one above "novpn"): adguardvpn-cli talking to the VPN server.
+    if (base.endsWith(QLatin1String("/novpn"))) {
+        const QString own = base.chopped(6);
+        const QString match = QStringLiteral("socket cgroupv2 level %1 \"%2\" meta mark != %3")
+                                  .arg(level - 2).arg(own, mark);
+        out += QStringLiteral("\t\t%1 counter comment \"out:%2\"\n").arg(match, DaemonTrafficId);
+        in += QStringLiteral("\t\t%1 counter comment \"in:%2\"\n").arg(match, DaemonTrafficId);
+    }
 
     // "table; delete table; table {…}" replaces the whole table in one transaction, whether or
     // not it existed before.

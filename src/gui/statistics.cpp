@@ -43,8 +43,13 @@ QString capitalized(QString text)
 
 } // namespace
 
-QVariantMap summarize(const QJsonObject &report, const QString &period, const QDateTime &now)
+QVariantMap summarize(const QJsonObject &report, const QString &period, const QDateTime &now, const QString &appId)
 {
+    // What a chart bar counts: the VPN's traffic in a day or hour, or one app's.
+    const auto chartPart = [&appId](const QJsonObject &bucket) {
+        return appId.isEmpty() ? bucket
+                               : bucket.value(QStringLiteral("apps")).toObject().value(appId).toObject();
+    };
     const QLocale locale;
     const QDate today = now.date();
     const QJsonObject days = report.value(QStringLiteral("days")).toObject();
@@ -85,7 +90,7 @@ QVariantMap summarize(const QJsonObject &report, const QString &period, const QD
         for (auto it = hourly.constBegin(); it != hourly.constEnd(); ++it) {
             const QDateTime start = QDateTime::fromSecsSinceEpoch(it.key().toLongLong()).toLocalTime();
             if (start.date() == today)
-                hours[start.time().hour()].add(it->toObject());
+                hours[start.time().hour()].add(chartPart(it->toObject()));
         }
         for (int hour = 0; hour < 24; ++hour) {
             const QString from = locale.toString(QTime(hour, 0), QLocale::ShortFormat);
@@ -96,7 +101,7 @@ QVariantMap summarize(const QJsonObject &report, const QString &period, const QD
         const bool week = period == QLatin1String("week");
         for (QDate date = first; date <= today; date = date.addDays(1)) {
             Totals totals;
-            totals.add(days.value(date.toString(Qt::ISODate)).toObject());
+            totals.add(chartPart(days.value(date.toString(Qt::ISODate)).toObject()));
             const QString label = week ? capitalized(locale.dayName(date.dayOfWeek(), QLocale::ShortFormat))
                                        : QString::number(date.day());
             const bool showLabel = week || date == today || first.daysTo(date) % 5 == 0;
@@ -110,7 +115,7 @@ QVariantMap summarize(const QJsonObject &report, const QString &period, const QD
         for (QDate date = start; date <= month; date = date.addMonths(1)) {
             Totals totals;
             for (QDate day = date; day.month() == date.month() && day <= today; day = day.addDays(1))
-                totals.add(days.value(day.toString(Qt::ISODate)).toObject());
+                totals.add(chartPart(days.value(day.toString(Qt::ISODate)).toObject()));
             const QString label = capitalized(locale.standaloneMonthName(date.month(), QLocale::ShortFormat));
             const QString tip = capitalized(locale.standaloneMonthName(date.month())) + QLatin1Char(' ')
                                 + QString::number(date.year());
@@ -209,6 +214,46 @@ QVariantMap summarize(const QJsonObject &report, const QString &period, const QD
             {QStringLiteral("since"), since},
             {QStringLiteral("hasData"), total.in + total.out + total.seconds + appsTotal.in + appsTotal.out > 0
                                             || !sessionList.isEmpty()}};
+}
+
+QByteArray toCsv(const QJsonObject &report)
+{
+    const auto field = [](QString text) {
+        if (text.contains(QLatin1Char(',')) || text.contains(QLatin1Char('"')) || text.contains(QLatin1Char('\n')))
+            text = QLatin1Char('"') + text.replace(QLatin1Char('"'), QStringLiteral("\"\"")) + QLatin1Char('"');
+        return text;
+    };
+    const auto number = [](const QJsonObject &object, const char *key) {
+        return QString::number(qint64(object.value(QLatin1String(key)).toDouble()));
+    };
+    const QJsonObject appInfo = report.value(QStringLiteral("apps")).toObject();
+
+    QStringList rows{QStringLiteral("date,type,name,download_bytes,upload_bytes,seconds,connections")};
+    const auto row = [&](const QString &date, const QString &type, const QString &name, const QJsonObject &values,
+                         const QString &connections = {}) {
+        rows.append(QStringList{date, type, field(name), number(values, "in"), number(values, "out"),
+                                number(values, "seconds"), connections}.join(QLatin1Char(',')));
+    };
+
+    const QJsonObject days = report.value(QStringLiteral("days")).toObject();
+    for (auto it = days.constBegin(); it != days.constEnd(); ++it) {
+        const QJsonObject day = it->toObject();
+        row(it.key(), QStringLiteral("vpn"), QString(), day, number(day, "connections"));
+        const QJsonObject locations = day.value(QStringLiteral("locations")).toObject();
+        for (auto location = locations.constBegin(); location != locations.constEnd(); ++location)
+            row(it.key(), QStringLiteral("location"), location.key(), location->toObject());
+        const QJsonObject apps = day.value(QStringLiteral("apps")).toObject();
+        for (auto app = apps.constBegin(); app != apps.constEnd(); ++app) {
+            const QString name = appInfo.value(app.key()).toObject().value(QStringLiteral("name")).toString(app.key());
+            row(it.key(), QStringLiteral("app"), name, app->toObject());
+        }
+    }
+    for (const QJsonValue &value : report.value(QStringLiteral("sessions")).toArray()) {
+        const QJsonObject session = value.toObject();
+        const QDateTime start = QDateTime::fromSecsSinceEpoch(qint64(session.value(QStringLiteral("start")).toDouble()));
+        row(start.toString(Qt::ISODate), QStringLiteral("session"), session.value(QStringLiteral("location")).toString(), session);
+    }
+    return (rows.join(QLatin1Char('\n')) + QLatin1Char('\n')).toUtf8();
 }
 
 } // namespace agv::stats

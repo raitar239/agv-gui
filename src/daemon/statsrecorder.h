@@ -38,7 +38,8 @@ public:
         QString location;
         QString tunDevice;
         std::optional<Bytes> tunnel;        // the tunnel's counters, when there is a tunnel
-        QMap<QString, Bytes> apps;          // app id → counters (nftables)
+        // app id → counters (nftables); "agvd" is agvd with the CLI, the VPN's traffic in SOCKS5 mode
+        QMap<QString, Bytes> apps;
         QHash<QString, AppInfo> appInfo;    // names for the ids above
     };
 
@@ -69,6 +70,10 @@ private:
         QHash<QString, Totals> locations;
         QHash<QString, Bytes> apps;
     };
+    struct Hour {
+        Totals vpn;
+        QHash<QString, Bytes> apps;
+    };
     struct Session {
         QDateTime start;
         QDateTime end;  // invalid while it lasts
@@ -81,7 +86,7 @@ private:
 
     QString m_path;
     QMap<QString, Day> m_days;          // "yyyy-MM-dd" (local time)
-    QMap<qint64, Totals> m_hours;       // hour start, seconds since the epoch
+    QMap<qint64, Hour> m_hours;         // hour start, seconds since the epoch
     QList<Session> m_sessions;          // oldest first
     std::optional<Session> m_current;
     QHash<QString, AppInfo> m_appInfo;
