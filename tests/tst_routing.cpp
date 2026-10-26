@@ -388,6 +388,10 @@ private slots:
         QVERIFY(script.contains(QStringLiteral("th dport 53 accept")));
         QVERIFY(script.contains(QStringLiteral("192.168.0.0/16")));
         QVERIFY(script.contains(QStringLiteral("chain forward")));
+        // Redirected DNS is judged where its device is final.
+        QVERIFY(script.indexOf(QStringLiteral("ct status dnat accept")) < script.indexOf(QStringLiteral("reject")));
+        QVERIFY(script.contains(QStringLiteral("ct status dnat jump allowed")));
+        QVERIFY(script.contains(QStringLiteral("ct status dnat counter drop")));
         QVERIFY(script.trimmed().endsWith(QLatin1Char('}')));
 
         options.allowLan = false;
@@ -404,7 +408,8 @@ private slots:
         options.mode = RoutingEngine::Mode::VpnOnly;
         const QString script = QString::fromUtf8(KillSwitch::buildRuleset(options));
         // Only the apps meant for the VPN are held back; the rest of the system goes out as usual.
-        QVERIFY(script.contains(QStringLiteral("meta mark 0x61677664 oifname != { \"lo\", \"tun0\" } counter reject")));
+        QVERIFY(script.contains(QStringLiteral("hook postrouting")));
+        QVERIFY(script.contains(QStringLiteral("meta mark 0x61677664 oifname != { \"lo\", \"tun0\" } counter drop")));
         QVERIFY(!script.contains(QStringLiteral("chain forward")));
     }
 
