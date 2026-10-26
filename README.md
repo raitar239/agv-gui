@@ -15,6 +15,7 @@ individual apps from the VPN**, the way the Windows client does.
   cgroups, and exposes the `org.agv.Daemon1` D-Bus API with polkit authorization.
 - `agv-gui` is the unprivileged window and tray. It talks only to the daemon.
 - `agv-run` starts a program already excluded from the VPN.
+- `agvctl` controls the daemon from a terminal.
 
 ## Install
 
@@ -32,7 +33,7 @@ Then open "AGV" from the application menu. The AdGuard VPN CLI itself comes from
 ## Build
 
 Requirements: CMake ≥ 3.22, a C++20 compiler, Qt ≥ 6.4 (Core, DBus, Network, Gui, Widgets,
-Quick, QuickControls2, Test). `-DAGV_BUILD_GUI=OFF` builds only the daemon and `agv-run`.
+Quick, QuickControls2, Test). `-DAGV_BUILD_GUI=OFF` builds only the daemon, `agv-run` and `agvctl`.
 
 ```sh
 cmake -S . -B build -G Ninja
@@ -64,6 +65,19 @@ development build (to `/usr/local` and `/etc`) and remove it again:
 sudo scripts/dev-install.sh
 sudo scripts/dev-install.sh --uninstall
 ```
+
+## Terminal
+
+```sh
+agvctl                      # status
+agvctl connect Frankfurt    # or: agvctl connect --fastest
+agvctl disconnect
+agvctl sites add example.com '*.example.com'
+agvctl apps off Steam
+agvctl stats week
+```
+
+`agvctl help` lists everything. It uses the same polkit rules as the window.
 
 ## Kill switch
 
