@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 
 project(agv-gui
-    VERSION 0.2.0
+    VERSION 0.2.1
     DESCRIPTION "GUI and per-app exclusions for AdGuard VPN CLI"
     LANGUAGES C CXX)
 
