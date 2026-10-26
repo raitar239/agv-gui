@@ -18,6 +18,6 @@ pkgbase = agv-gui
 	depends = systemd
 	optdepends = adguardvpn-cli-bin: the AdGuard VPN CLI, unless installed with AdGuard's script
 	source = agv-gui-0.2.0.tar.gz::https://github.com/raitar239/agv-gui/archive/refs/tags/v0.2.0.tar.gz
-	sha256sums = SKIP
+	sha256sums = 1468469f840c3cef3ca535c8def7d51985c3de07d3ed871ed1c8be02f7f50ed2
 
 pkgname = agv-gui

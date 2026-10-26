@@ -12,7 +12,7 @@ makedepends=('cmake' 'ninja' 'qt6-tools')
 optdepends=('adguardvpn-cli-bin: the AdGuard VPN CLI, unless installed with AdGuard'\''s script')
 install=agv-gui.install
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('SKIP')  # packaging/aur/update.sh fills this in for a release
+sha256sums=('1468469f840c3cef3ca535c8def7d51985c3de07d3ed871ed1c8be02f7f50ed2')
 
 build() {
     cmake -S "$pkgname-$pkgver" -B build -G Ninja \
