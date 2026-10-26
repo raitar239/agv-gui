@@ -187,6 +187,8 @@ private slots:
         QVERIFY(engine.apply({QStringLiteral("run")}, RoutingEngine::Mode::VpnOnly));
         QVERIFY(commands.commands().contains(
             QStringLiteral("ip -4 rule add not fwmark 0x61677664 lookup main priority 30700")));
+        QVERIFY(commands.commands().contains(
+            QStringLiteral("ip -6 rule add not fwmark 0x61677664 unreachable priority 30701")));
 
         commands.calls.clear();
         QVERIFY(engine.apply({QStringLiteral("run")}, RoutingEngine::Mode::Bypass));
@@ -276,6 +278,11 @@ private slots:
         QVERIFY(commands.calls.first().input.contains("app-00000001"));
         QVERIFY(commandsRun.contains(QStringLiteral("ip -4 rule add fwmark 0x61677664 lookup main priority 30700")));
         QVERIFY(commandsRun.contains(QStringLiteral("ip -6 rule add fwmark 0x61677664 lookup main priority 30700")));
+        // Without a route in main (IPv6 on an IPv4-only network) marked traffic must not fall
+        // through to AdGuard's table, into the tunnel.
+        QVERIFY(commandsRun.contains(QStringLiteral("ip -6 rule add fwmark 0x61677664 unreachable priority 30701")));
+        QVERIFY(commandsRun.contains(QStringLiteral("ip -4 rule add fwmark 0x61677664 unreachable priority 30701")));
+        QVERIFY(commandsRun.contains(QStringLiteral("ip -6 rule del priority 30701")));
         QVERIFY(commandsRun.indexOf(QStringLiteral("ip -4 rule del priority 30700"))
                 < commandsRun.indexOf(QStringLiteral("ip -4 rule add fwmark 0x61677664 lookup main priority 30700")));
 

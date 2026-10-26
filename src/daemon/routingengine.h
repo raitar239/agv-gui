@@ -52,7 +52,7 @@ class RoutingEngine
 {
 public:
     static constexpr quint32 Mark = 0x61677664;  // "agvd"
-    static constexpr int RulePriority = 30700;   // before AdGuard's 30800/30801
+    static constexpr int RulePriority = 30700;   // before AdGuard's 30800/30801 (and 30701)
     static inline const QString TableName = QStringLiteral("agvd");
     static inline const QString BuiltinRunId = QStringLiteral("run"); // plain "agv-run cmd"
     // traffic() key for agvd itself with adguardvpn-cli: in SOCKS5 mode that is the VPN's traffic.

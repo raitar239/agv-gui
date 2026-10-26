@@ -288,23 +288,33 @@ bool RoutingEngine::applyIpRules(Mode mode)
         args << QStringLiteral("not");
     args << QStringLiteral("fwmark") << markHex() << QStringLiteral("lookup") << QStringLiteral("main")
          << QStringLiteral("priority") << QString::number(RulePriority);
+    // Where main has no route (typically IPv6 on a network without it) the lookup would fall
+    // through to AdGuard's table and into the tunnel; "unreachable" makes the app fall back to
+    // the other address family instead.
+    QStringList fence = args.mid(0, args.indexOf(QStringLiteral("lookup")));
+    fence << QStringLiteral("unreachable") << QStringLiteral("priority") << QString::number(RulePriority + 1);
+
     const auto v4 = m_commands->run(QStringLiteral("ip"), QStringList{QStringLiteral("-4")} + args);
     if (v4.exitCode != 0)
         return fail(QStringLiteral("ip rule failed: %1").arg(QString::fromUtf8(v4.output).trimmed()));
+    m_commands->run(QStringLiteral("ip"), QStringList{QStringLiteral("-4")} + fence);
     // IPv6 may be disabled; then there is nothing to route anyway.
     m_commands->run(QStringLiteral("ip"), QStringList{QStringLiteral("-6")} + args);
+    m_commands->run(QStringLiteral("ip"), QStringList{QStringLiteral("-6")} + fence);
     return true;
 }
 
 void RoutingEngine::removeIpRules()
 {
     for (const QString &family : {QStringLiteral("-4"), QStringLiteral("-6")}) {
-        for (int i = 0; i < MaxRuleDeletes; ++i) {
-            const auto result = m_commands->run(QStringLiteral("ip"),
-                                                {family, QStringLiteral("rule"), QStringLiteral("del"),
-                                                 QStringLiteral("priority"), QString::number(RulePriority)});
-            if (result.exitCode != 0)
-                break;
+        for (const int priority : {RulePriority, RulePriority + 1}) {
+            for (int i = 0; i < MaxRuleDeletes; ++i) {
+                const auto result = m_commands->run(QStringLiteral("ip"),
+                                                    {family, QStringLiteral("rule"), QStringLiteral("del"),
+                                                     QStringLiteral("priority"), QString::number(priority)});
+                if (result.exitCode != 0)
+                    break;
+            }
         }
     }
 }
