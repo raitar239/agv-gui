@@ -171,6 +171,99 @@ Item {
                 }
             }
 
+            // Networks
+            Card {
+                readonly property var network: Daemon.network
+                visible: Daemon.available && network.available === true
+                Layout.fillWidth: true
+                ColumnLayout {
+                    width: parent.width
+                    spacing: 14
+                    Text {
+                        text: qsTr("Networks")
+                        color: Theme.text
+                        font.pixelSize: Theme.fontBody
+                        font.weight: Font.DemiBold
+                    }
+                    SettingRow {
+                        title: qsTr("Connect on Wi-Fi I do not trust")
+                        hint: qsTr("Cafés, hotels, airports: the VPN turns on when the computer joins any Wi-Fi that is not in the trusted list.")
+                        checked: Daemon.wifiAutoConnect
+                        available: Daemon.loggedIn
+                        onToggled: (checked) => Daemon.setWifiAutoConnect(checked)
+                    }
+                    SettingRow {
+                        title: qsTr("Disconnect on trusted networks")
+                        hint: qsTr("The VPN turns off when the computer joins a trusted network, at home for example.")
+                        checked: Daemon.trustedDisconnect
+                        onToggled: (checked) => Daemon.setTrustedDisconnect(checked)
+                    }
+
+                    // The network the computer is on now.
+                    RowLayout {
+                        readonly property var network: Daemon.network
+                        visible: network.type !== undefined && network.type !== ""
+                        spacing: 12
+                        Layout.fillWidth: true
+                        AppIcon {
+                            name: parent.network.type === "wifi" ? "wifi" : "globe"
+                            color: Theme.textSecondary
+                        }
+                        ColumnLayout {
+                            spacing: 2
+                            Layout.fillWidth: true
+                            Text {
+                                text: parent.parent.network.name || ""
+                                color: Theme.text
+                                font.pixelSize: Theme.fontBody
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
+                            }
+                            Text {
+                                readonly property var network: parent.parent.network
+                                text: network.trusted ? qsTr("Current network · trusted")
+                                    : network.open ? qsTr("Current network · open Wi-Fi without a password")
+                                    : qsTr("Current network")
+                                color: network.open && !network.trusted ? Theme.warning : Theme.textSecondary
+                                font.pixelSize: Theme.fontSmall
+                                Layout.fillWidth: true
+                            }
+                        }
+                        FlatButton {
+                            readonly property var network: parent.network
+                            kind: network.trusted ? "subtle" : "secondary"
+                            compact: true
+                            text: network.trusted ? qsTr("Don't trust") : qsTr("Trust")
+                            onClicked: Daemon.setNetworkTrusted(network.uuid, network.name, !network.trusted)
+                        }
+                    }
+
+                    // Other trusted networks, to forget them.
+                    Repeater {
+                        model: Daemon.trustedNetworks.filter(n => n.uuid !== Daemon.network.uuid)
+                        delegate: RowLayout {
+                            required property var modelData
+                            spacing: 12
+                            Layout.fillWidth: true
+                            AppIcon { name: "check"; color: Theme.accent; size: 18 }
+                            Text {
+                                text: modelData.name
+                                color: Theme.textSecondary
+                                font.pixelSize: Theme.fontSmall + 1
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
+                            }
+                            FlatButton {
+                                kind: "subtle"
+                                compact: true
+                                iconName: "close"
+                                onClicked: Daemon.setNetworkTrusted(modelData.uuid, modelData.name, false)
+                            }
+                        }
+                    }
+                }
+            }
+
             // Appearance
             Card {
                 Layout.fillWidth: true

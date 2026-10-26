@@ -53,6 +53,8 @@ public:
     // itself), "package" (a distribution or AUR package), "other", or "missing".
     QString cliInstall() const { return m_cliInstall; }
     void refreshCliInfo();
+    // The computer joined another network: a pending reconnect tries again right away.
+    void networkChanged();
     // Runs the CLI's own updater; only for script installs.
     void updateCli(Done done);
     QString lastMode() const { return m_lastMode; }

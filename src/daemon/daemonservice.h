@@ -17,6 +17,7 @@ class AppExclusionService;
 class DaemonSettings;
 class DnsGuard;
 class KillSwitch;
+class NetworkRules;
 class StatsRecorder;
 class SystemdUnit;
 class VpnService;
@@ -45,6 +46,10 @@ class DaemonService : public QObject, protected QDBusContext
     Q_PROPERTY(bool KeepDnsInVpn READ keepDnsInVpn)
     Q_PROPERTY(bool Reconnecting READ reconnecting)
     Q_PROPERTY(QString CliVersion READ cliVersion)
+    Q_PROPERTY(QVariantMap Network READ network)
+    Q_PROPERTY(QVariantMap TrustedNetworks READ trustedNetworks)
+    Q_PROPERTY(bool WifiAutoConnect READ wifiAutoConnect)
+    Q_PROPERTY(bool TrustedDisconnect READ trustedDisconnect)
     Q_PROPERTY(QString CliInstall READ cliInstall)
 
 public:
@@ -69,12 +74,18 @@ public:
     bool keepDnsInVpn() const;
     bool reconnecting() const;
     QString cliVersion() const;
+    QVariantMap network() const;
+    QVariantMap trustedNetworks() const;
+    bool wifiAutoConnect() const;
+    bool trustedDisconnect() const;
     QString cliInstall() const;
 
     // Optional: without them the startup properties read false and setting them fails.
     void setStartup(DaemonSettings *settings, SystemdUnit *unit);
     // Optional: without it GetStatistics answers an empty object.
     void setStatistics(StatsRecorder *stats) { m_stats = stats; }
+    // Optional: without it Network reports available = false. Needs setStartup().
+    void setNetworkRules(NetworkRules *rules);
     // Optional: needs setStartup() too, where its setting lives. engine gives the cgroups.
     void setProtection(KillSwitch *killSwitch, DnsGuard *dnsGuard, RoutingEngine *engine);
 
@@ -110,6 +121,9 @@ public slots:
     void SetKillSwitchAllowLan(bool enabled);
     void SetKeepDnsInVpn(bool enabled);
     void UpdateCli();
+    void SetWifiAutoConnect(bool enabled);
+    void SetTrustedDisconnect(bool enabled);
+    void SetNetworkTrusted(const QString &uuid, const QString &name, bool trusted);
 
     QString GetStatistics();
     void ResetStatistics();
@@ -141,6 +155,7 @@ private:
     StatsRecorder *m_stats = nullptr;
     KillSwitch *m_killSwitch = nullptr;
     DnsGuard *m_dnsGuard = nullptr;
+    NetworkRules *m_networkRules = nullptr;
     RoutingEngine *m_engine = nullptr;
     PolkitAuthorizer *m_polkit;
     QDBusConnection m_bus;

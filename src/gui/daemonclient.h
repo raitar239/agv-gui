@@ -57,6 +57,12 @@ class DaemonClient : public QObject
     // The installed adguardvpn-cli: "1.8.1", and "script", "package", "other" or "missing".
     Q_PROPERTY(QString cliVersion READ cliVersion NOTIFY statusChanged)
     Q_PROPERTY(QString cliInstall READ cliInstall NOTIFY statusChanged)
+    // { available, uuid, name, type, open, trusted } of the network the computer is on.
+    Q_PROPERTY(QVariantMap network READ network NOTIFY statusChanged)
+    // [{ uuid, name }], sorted by name.
+    Q_PROPERTY(QVariantList trustedNetworks READ trustedNetworks NOTIFY statusChanged)
+    Q_PROPERTY(bool wifiAutoConnect READ wifiAutoConnect NOTIFY statusChanged)
+    Q_PROPERTY(bool trustedDisconnect READ trustedDisconnect NOTIFY statusChanged)
     // Bytes through the tunnel since it came up; refreshed by refreshTunnelTraffic().
     // False in SOCKS5 mode: there is no tunnel whose traffic could be counted.
     Q_PROPERTY(bool hasTunnel READ hasTunnel NOTIFY statusChanged)
@@ -104,6 +110,10 @@ public:
     bool keepDnsInVpn() const { return m_props.value(QStringLiteral("KeepDnsInVpn")).toBool(); }
     bool killSwitchActive() const { return m_props.value(QStringLiteral("KillSwitchActive")).toBool(); }
     QString cliVersion() const { return m_props.value(QStringLiteral("CliVersion")).toString(); }
+    QVariantMap network() const { return m_props.value(QStringLiteral("Network")).toMap(); }
+    QVariantList trustedNetworks() const;
+    bool wifiAutoConnect() const { return m_props.value(QStringLiteral("WifiAutoConnect")).toBool(); }
+    bool trustedDisconnect() const { return m_props.value(QStringLiteral("TrustedDisconnect")).toBool(); }
     QString cliInstall() const { return m_props.value(QStringLiteral("CliInstall")).toString(); }
     bool reconnecting() const { return m_props.value(QStringLiteral("Reconnecting")).toBool(); }
     QVariantMap config() const { return m_config; }
@@ -161,6 +171,9 @@ public:
     Q_INVOKABLE void setKillSwitchAllowLan(bool enabled);
     Q_INVOKABLE void setKeepDnsInVpn(bool enabled);
     Q_INVOKABLE void updateCli();
+    Q_INVOKABLE void setWifiAutoConnect(bool enabled);
+    Q_INVOKABLE void setTrustedDisconnect(bool enabled);
+    Q_INVOKABLE void setNetworkTrusted(const QString &uuid, const QString &name, bool trusted);
     // Reads the tunnel interface counters from sysfs (cheap; called by the UI while visible).
     Q_INVOKABLE void refreshTunnelTraffic();
 

@@ -783,6 +783,14 @@ void VpnService::trackConnection()
     }
 }
 
+void VpnService::networkChanged()
+{
+    if (!m_reconnecting)
+        return;
+    m_reconnectAttempts = 0;
+    m_reconnect->start(1000);
+}
+
 void VpnService::scheduleReconnect()
 {
     const int last = int(std::size(ReconnectDelaysMs)) - 1;

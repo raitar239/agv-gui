@@ -659,112 +659,162 @@
         <translation>DNS-запросы всех программ идут через VPN, даже если система спрашивает роутер, — провайдер не видит, какие сайты вы открываете. Локальные имена вроде router.lan при подключении не работают.</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="185"/>
+        <location filename="../qml/SettingsPage.qml" line="183"/>
+        <source>Networks</source>
+        <translation>Сети</translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingsPage.qml" line="189"/>
+        <source>Connect on Wi-Fi I do not trust</source>
+        <translation>Подключаться в недоверенных Wi-Fi</translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingsPage.qml" line="190"/>
+        <source>Cafés, hotels, airports: the VPN turns on when the computer joins any Wi-Fi that is not in the trusted list.</source>
+        <translation>Кафе, отели, аэропорты: VPN включается, когда компьютер подключается к любой Wi-Fi не из списка доверенных.</translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingsPage.qml" line="196"/>
+        <source>Disconnect on trusted networks</source>
+        <translation>Отключаться в доверенных сетях</translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingsPage.qml" line="197"/>
+        <source>The VPN turns off when the computer joins a trusted network, at home for example.</source>
+        <translation>VPN выключается, когда компьютер подключается к доверенной сети, например дома.</translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingsPage.qml" line="224"/>
+        <source>Current network · trusted</source>
+        <translation>Текущая сеть · доверенная</translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingsPage.qml" line="225"/>
+        <source>Current network · open Wi-Fi without a password</source>
+        <translation>Текущая сеть · открытая Wi-Fi без пароля</translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingsPage.qml" line="226"/>
+        <source>Current network</source>
+        <translation>Текущая сеть</translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingsPage.qml" line="236"/>
+        <source>Don&apos;t trust</source>
+        <translation>Не доверять</translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingsPage.qml" line="236"/>
+        <source>Trust</source>
+        <translation>Доверять</translation>
+    </message>
+    <message>
+        <location filename="../qml/SettingsPage.qml" line="278"/>
         <source>Theme</source>
         <translation>Тема</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="191"/>
+        <location filename="../qml/SettingsPage.qml" line="284"/>
         <source>System</source>
         <translation>Системная</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="192"/>
+        <location filename="../qml/SettingsPage.qml" line="285"/>
         <source>Light</source>
         <translation>Светлая</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="193"/>
+        <location filename="../qml/SettingsPage.qml" line="286"/>
         <source>Dark</source>
         <translation>Тёмная</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="203"/>
+        <location filename="../qml/SettingsPage.qml" line="296"/>
         <source>Language</source>
         <translation>Язык</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="225"/>
+        <location filename="../qml/SettingsPage.qml" line="318"/>
         <source>Startup</source>
         <translation>Запуск</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="231"/>
+        <location filename="../qml/SettingsPage.qml" line="324"/>
         <source>Open AGV in the tray when I log in</source>
         <translation>Открывать AGV в трее при входе в систему</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="242"/>
+        <location filename="../qml/SettingsPage.qml" line="335"/>
         <source>Hyprland: add this line to hyprland.conf. Click to copy.</source>
         <translation>Hyprland: добавьте эту строку в hyprland.conf. Нажмите, чтобы скопировать.</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="268"/>
+        <location filename="../qml/SettingsPage.qml" line="361"/>
         <source>Copy</source>
         <translation>Копировать</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="287"/>
+        <location filename="../qml/SettingsPage.qml" line="380"/>
         <source>Start the VPN service at boot</source>
         <translation>Запускать службу VPN при загрузке</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="288"/>
+        <location filename="../qml/SettingsPage.qml" line="381"/>
         <source>Needs an administrator password.</source>
         <translation>Нужен пароль администратора.</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="294"/>
+        <location filename="../qml/SettingsPage.qml" line="387"/>
         <source>Connect automatically</source>
         <translation>Подключаться автоматически</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="295"/>
+        <location filename="../qml/SettingsPage.qml" line="388"/>
         <source>When the service starts, connect to the last location and keep trying until the network is up.</source>
         <translation>При запуске службы подключаться к последней локации и повторять попытки, пока не появится сеть.</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="347"/>
+        <location filename="../qml/SettingsPage.qml" line="440"/>
         <source>AdGuard VPN CLI is not installed</source>
         <translation>AdGuard VPN CLI не установлен</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="348"/>
+        <location filename="../qml/SettingsPage.qml" line="441"/>
         <source>AdGuard VPN CLI %1</source>
         <translation>AdGuard VPN CLI %1</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="355"/>
+        <location filename="../qml/SettingsPage.qml" line="448"/>
         <source>AGV needs it to connect. Install it, and AGV finds it on its own.</source>
         <translation>Без него AGV не может подключиться. Установите его — AGV найдёт его сам.</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="358"/>
+        <location filename="../qml/SettingsPage.qml" line="451"/>
         <source>Version %1 is available.</source>
         <translation>Доступна версия %1.</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="359"/>
+        <location filename="../qml/SettingsPage.qml" line="452"/>
         <source>Version %1 is available. Update it with your package manager.</source>
         <translation>Доступна версия %1. Обновите его пакетным менеджером.</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="361"/>
+        <location filename="../qml/SettingsPage.qml" line="454"/>
         <source>Checking for updates…</source>
         <translation>Проверка обновлений…</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="362"/>
+        <location filename="../qml/SettingsPage.qml" line="455"/>
         <source>Up to date</source>
         <translation>Последняя версия</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="375"/>
+        <location filename="../qml/SettingsPage.qml" line="468"/>
         <source>Update</source>
         <translation>Обновить</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="383"/>
+        <location filename="../qml/SettingsPage.qml" line="476"/>
         <source>Copy install command</source>
         <translation>Скопировать команду установки</translation>
     </message>
@@ -804,32 +854,32 @@
         <translation>Уведомление на рабочем столе, когда VPN пропал и когда вернулся.</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="318"/>
+        <location filename="../qml/SettingsPage.qml" line="411"/>
         <source>agvd service is running</source>
         <translation>Служба agvd работает</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="318"/>
+        <location filename="../qml/SettingsPage.qml" line="411"/>
         <source>agvd service is not running</source>
         <translation>Служба agvd не запущена</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="324"/>
+        <location filename="../qml/SettingsPage.qml" line="417"/>
         <source>App exclusions: %1</source>
         <translation>Исключения приложений: %1</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="324"/>
+        <location filename="../qml/SettingsPage.qml" line="417"/>
         <source>available</source>
         <translation>доступны</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="324"/>
+        <location filename="../qml/SettingsPage.qml" line="417"/>
         <source>not available</source>
         <translation>недоступны</translation>
     </message>
     <message>
-        <location filename="../qml/SettingsPage.qml" line="329"/>
+        <location filename="../qml/SettingsPage.qml" line="422"/>
         <source>agv-gui %1</source>
         <translation>agv-gui %1</translation>
     </message>
@@ -1229,67 +1279,67 @@
         <translation>Сохранено. Применится при следующем подключении.</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="438"/>
+        <location filename="../daemonclient.cpp" line="466"/>
         <source>AdGuard VPN CLI is updated. Reconnect to start using it.</source>
         <translation>AdGuard VPN CLI обновлён. Переподключитесь, чтобы начать им пользоваться.</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="439"/>
+        <location filename="../daemonclient.cpp" line="467"/>
         <source>AdGuard VPN CLI is updated.</source>
         <translation>AdGuard VPN CLI обновлён.</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="554"/>
+        <location filename="../daemonclient.cpp" line="582"/>
         <source>Signed in with your adguardvpn-cli account</source>
         <translation>Вход выполнен через аккаунт из adguardvpn-cli</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="570"/>
+        <location filename="../daemonclient.cpp" line="598"/>
         <source>The login link from AdGuard VPN looks wrong: %1</source>
         <translation>Ссылка для входа от AdGuard VPN выглядит подозрительно: %1</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="574"/>
+        <location filename="../daemonclient.cpp" line="602"/>
         <source>Open this link to sign in: %1</source>
         <translation>Откройте ссылку, чтобы войти: %1</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="576"/>
+        <location filename="../daemonclient.cpp" line="604"/>
         <source>Confirm the sign-in in your browser</source>
         <translation>Подтвердите вход в браузере</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="584"/>
+        <location filename="../daemonclient.cpp" line="612"/>
         <source>Signed in</source>
         <translation>Вход выполнен</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="587"/>
+        <location filename="../daemonclient.cpp" line="615"/>
         <source>Sign-in failed: %1</source>
         <translation>Не удалось войти: %1</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="697"/>
+        <location filename="../daemonclient.cpp" line="728"/>
         <source>Sign in to AdGuard VPN first</source>
         <translation>Сначала войдите в AdGuard VPN</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="700"/>
+        <location filename="../daemonclient.cpp" line="731"/>
         <source>Not allowed: %1</source>
         <translation>Нет доступа: %1</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="702"/>
+        <location filename="../daemonclient.cpp" line="733"/>
         <source>This needs an administrator password</source>
         <translation>Нужен пароль администратора</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="705"/>
+        <location filename="../daemonclient.cpp" line="736"/>
         <source>The agvd service is not running</source>
         <translation>Служба agvd не запущена</translation>
     </message>
     <message>
-        <location filename="../daemonclient.cpp" line="708"/>
+        <location filename="../daemonclient.cpp" line="739"/>
         <source>The agvd service did not answer in time</source>
         <translation>Служба agvd не ответила вовремя</translation>
     </message>

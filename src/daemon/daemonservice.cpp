@@ -4,6 +4,7 @@
 #include "daemonsettings.h"
 #include "dnsguard.h"
 #include "killswitch.h"
+#include "networkrules.h"
 #include "systemdunit.h"
 #include "polkitauthorizer.h"
 #include "statsrecorder.h"
@@ -150,6 +151,56 @@ bool DaemonService::killSwitchAllowLan() const { return !m_settings || m_setting
 bool DaemonService::reconnecting() const { return m_vpn->reconnecting(); }
 QString DaemonService::cliVersion() const { return m_vpn->cliVersion(); }
 QString DaemonService::cliInstall() const { return m_vpn->cliInstall(); }
+
+QVariantMap DaemonService::network() const
+{
+    return m_networkRules ? m_networkRules->currentNetwork() : QVariantMap{{QStringLiteral("available"), false}};
+}
+
+QVariantMap DaemonService::trustedNetworks() const { return m_settings ? m_settings->trustedNetworks() : QVariantMap(); }
+bool DaemonService::wifiAutoConnect() const { return m_settings && m_settings->wifiAutoConnect(); }
+bool DaemonService::trustedDisconnect() const { return m_settings && m_settings->trustedDisconnect(); }
+
+void DaemonService::setNetworkRules(NetworkRules *rules)
+{
+    m_networkRules = rules;
+    connect(m_networkRules, &NetworkRules::changed, this, [this] { emitPropertiesChanged({QStringLiteral("Network")}); });
+}
+
+void DaemonService::SetWifiAutoConnect(bool enabled)
+{
+    authorized(ActionConfigure, [this, enabled](const QDBusMessage &message) {
+        setSetting(message, QStringLiteral("WifiAutoConnect"), [this, enabled] { m_settings->setWifiAutoConnect(enabled); });
+        if (m_networkRules && enabled)
+            m_networkRules->apply();
+    });
+}
+
+void DaemonService::SetTrustedDisconnect(bool enabled)
+{
+    authorized(ActionConfigure, [this, enabled](const QDBusMessage &message) {
+        setSetting(message, QStringLiteral("TrustedDisconnect"), [this, enabled] { m_settings->setTrustedDisconnect(enabled); });
+    });
+}
+
+void DaemonService::SetNetworkTrusted(const QString &uuid, const QString &name, bool trusted)
+{
+    authorized(ActionConfigure, [this, uuid, name, trusted](const QDBusMessage &message) {
+        if (uuid.isEmpty() || uuid.size() > 64 || name.size() > 256) {
+            replyError(message, {errors::InvalidArgument, QStringLiteral("Invalid network")});
+            return;
+        }
+        setSetting(message, QStringLiteral("TrustedNetworks"), [this, uuid, name, trusted] {
+            QVariantMap networks = m_settings->trustedNetworks();
+            if (trusted)
+                networks.insert(uuid, name);
+            else
+                networks.remove(uuid);
+            m_settings->setTrustedNetworks(networks);
+        });
+        emitPropertiesChanged({QStringLiteral("Network")});
+    });
+}
 
 void DaemonService::UpdateCli()
 {
