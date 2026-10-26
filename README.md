@@ -42,8 +42,10 @@ curl -fsSL https://raw.githubusercontent.com/AdguardTeam/AdGuardVPNCLI/master/sc
 
 Then AGV:
 
-- **Arch Linux**: `agv-gui` or `agv-gui-git` from the AUR, or build this checkout with
-  `cd packaging/arch && makepkg -si`.
+- **Arch Linux**: the `.pkg.tar.zst` from [Releases](https://github.com/raitar239/agv-gui/releases)
+  (`sudo pacman -U agv-gui-*.pkg.tar.zst`), or build it: `cd packaging/aur/agv-gui && makepkg -si`.
+  AUR packages (`agv-gui`, `agv-gui-git`) are ready in `packaging/aur` and will be published once
+  AUR registration reopens.
 - **Debian, Ubuntu, Fedora**: the `.deb` and `.rpm` packages from
   [Releases](https://github.com/raitar239/agv-gui/releases).
 
